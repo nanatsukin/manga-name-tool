@@ -148,6 +148,7 @@ createApp({
                     drawing.history.push(url);
                     drawing.historyStep++;
                     drawing.imgSrc = url;
+                    drawing.cachedBlob = blob; // Blobをキャッシュ
 
                     // ステートクリア
                     showDrawingModal.value = false;
@@ -303,6 +304,7 @@ createApp({
                 drawing.history.push(url);
                 drawing.historyStep++;
                 drawing.imgSrc = url;
+                drawing.cachedBlob = blob; // Blobをキャッシュ
 
                 // 【重要】Vueに配列の更新を検知させるための処理
                 // 配列の中身を更新しただけではボタンの disabled が変わらない場合があるため
@@ -331,6 +333,7 @@ createApp({
                                 }
 
                                 d.imgSrc = URL.createObjectURL(blob);
+                                d.cachedBlob = blob; // Blobをキャッシュ
                                 resolve();
                             });
                         });
@@ -346,13 +349,18 @@ createApp({
             if (isRestoring.value) return;
             saveStatus.value = 'saving';
             try {
-                if (currentMode.value === 'conte') await saveAllCanvases();
+                // コンテモード時の強制全保存は重いため削除（stopDrawで更新されている前提）
+                // if (currentMode.value === 'conte') await saveAllCanvases();
+
                 const dataToSave = { pages: JSON.parse(JSON.stringify(pages.value)), config: JSON.parse(JSON.stringify(pageConfig.value)) };
                 await Promise.all(dataToSave.pages.map(async (page, pIdx) => {
                     await Promise.all(page.drawings.map(async (d, dIdx) => {
                         delete d.history; delete d.historyStep;
-                        const originalImgSrc = pages.value[pIdx].drawings[dIdx].imgSrc;
-                        if (originalImgSrc) { try { const res = await fetch(originalImgSrc); d.imgBlob = await res.blob(); delete d.imgSrc; } catch (e) { } }
+                        const originalDrawing = pages.value[pIdx].drawings[dIdx];
+                        const originalImgSrc = originalDrawing.imgSrc;
+                        // キャッシュがあればそれを使用し、fetchを回避
+                        if (originalDrawing.cachedBlob) { d.imgBlob = originalDrawing.cachedBlob; delete d.imgSrc; delete d.cachedBlob; }
+                        else if (originalImgSrc) { try { const res = await fetch(originalImgSrc); d.imgBlob = await res.blob(); originalDrawing.cachedBlob = d.imgBlob; delete d.imgSrc; } catch (e) { } }
                     }));
                 }));
                 await set('manga_project_autosave', dataToSave);
@@ -1047,6 +1055,7 @@ createApp({
                             const res = await fetch(drawing.imgSrc);
                             const blob = await res.blob();
                             drawing.imgSrc = URL.createObjectURL(blob);
+                            drawing.cachedBlob = blob; // Blobをキャッシュ
                         }
                         drawing.history = drawing.imgSrc ? [drawing.imgSrc] : [];
                         drawing.historyStep = drawing.imgSrc ? 0 : -1;
@@ -1293,6 +1302,7 @@ createApp({
                             for (const drawing of page.drawings) {
                                 if (drawing.imgBlob) {
                                     drawing.imgSrc = URL.createObjectURL(drawing.imgBlob);
+                                    drawing.cachedBlob = drawing.imgBlob; // 復元時にキャッシュ
                                     delete drawing.imgBlob;
                                 }
                                 drawing.history = [];
