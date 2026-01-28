@@ -570,7 +570,7 @@
 
             <div v-if="currentMode === 'name'" class="h-full overflow-y-auto bg-gray-600 p-8"
                 @mousedown="selectItem(null)">
-                <div class="flex flex-col items-center scale-90 origin-top pb-20">
+                <div class="flex flex-col items-center origin-top pb-20">
                     <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container">
                         <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
                             :id="'render-page-' + page.pageIndex" :style="pageStyle"

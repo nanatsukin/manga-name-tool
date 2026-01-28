@@ -783,6 +783,7 @@ createApp({
             if (e.target.classList.contains('resize-handle')) return;
             // タッチの場合はデフォルト動作（スクロールなど）を防ぐ
             if (e.type === 'touchstart') e.preventDefault();
+            e.stopPropagation();
 
             interactTarget = item;
             const pos = getClientPos(e);
@@ -813,7 +814,7 @@ createApp({
 
         const onLayoutDrag = (e) => {
             if (!interactTarget) return;
-            if (e.type === 'touchmove') e.preventDefault(); // スクロール防止
+            e.preventDefault(); // スクロールや選択を防止
 
             const pos = getClientPos(e);
             let newX = startValX + (pos.x - startX);
