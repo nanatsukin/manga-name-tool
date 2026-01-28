@@ -488,7 +488,15 @@ createApp({
 
         // --- ドラッグ＆ドロップ（プロット） ---
         const dragStart = (pIndex, idx) => { draggingItem.value = { pIndex, idx }; };
-        const dragOverScript = (pIndex, idx) => { if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) { dropTarget.value = null; return; } dropTarget.value = { pIndex, idx }; };
+        const dragOverScript = (pIndex, idx) => {
+            if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) {
+                if (dropTarget.value !== null) dropTarget.value = null;
+                return;
+            }
+            if (!dropTarget.value || dropTarget.value.pIndex !== pIndex || dropTarget.value.idx !== idx) {
+                dropTarget.value = { pIndex, idx };
+            }
+        };
         const dragOverPage = (pIndex) => { if (dropTarget.value && dropTarget.value.pIndex === pIndex && dropTarget.value.idx !== null) return; dropTarget.value = { pIndex, idx: null }; };
         const dropOnScript = (pIndex, idx) => executeScriptMove(pIndex, idx);
         const dropOnPage = (pIndex) => executeScriptMove(pIndex, null);
@@ -524,14 +532,30 @@ createApp({
         // --- ドラッグ＆ドロップ（コンテのコマ） ---
         const dragStartDrawing = (e, idx) => { if (!isDrawingDragReady.value) { e.preventDefault(); return; } draggingDrawingIndex.value = idx; };
         const dragEndDrawing = () => { draggingDrawingIndex.value = null; dropTargetDrawingIndex.value = null; isDrawingDragReady.value = false; };
-        const dragOverDrawing = (idx) => { if (draggingDrawingIndex.value === null) return; if (draggingDrawingIndex.value === idx) return; dropTargetDrawingIndex.value = idx; };
+        const dragOverDrawing = (idx) => { if (draggingDrawingIndex.value === null) return; if (draggingDrawingIndex.value === idx) return; if (dropTargetDrawingIndex.value !== idx) dropTargetDrawingIndex.value = idx; };
 
         // コマ移動ロジック（async/await対応）
         const dropOnDrawing = async (targetIdx) => {
             const srcIdx = draggingDrawingIndex.value; // 退避
             if (srcIdx === null) return;
 
-            await saveAllCanvases();
+            // 現在のページのキャンバスのみ保存（軽量化）
+            const page = pages.value[activePageIndex.value];
+            await Promise.all(page.drawings.map(d => {
+                const cvs = canvasRefs.value[d.id];
+                if (cvs) {
+                    return new Promise(resolve => {
+                        cvs.toBlob(blob => {
+                            const isUsedInHistory = d.history && d.history.includes(d.imgSrc);
+                            if (d.imgSrc && d.imgSrc.startsWith('blob:') && !isUsedInHistory) URL.revokeObjectURL(d.imgSrc);
+                            d.imgSrc = URL.createObjectURL(blob);
+                            d.cachedBlob = blob;
+                            resolve();
+                        });
+                    });
+                }
+                return Promise.resolve();
+            }));
 
             const drawings = pages.value[activePageIndex.value].drawings;
             const item = drawings.splice(srcIdx, 1)[0];
@@ -543,7 +567,7 @@ createApp({
 
         const dragStartConteScript = (e, script) => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.dropEffect = 'move'; e.dataTransfer.setData('text/plain', script.id); draggingConteScript.value = script; };
         const dragEndConteScript = () => { draggingConteScript.value = null; isConteDropTarget.value = null; };
-        const dragOverConteScript = (targetId) => { if (draggingDrawingIndex.value !== null) return; if (!draggingConteScript.value) return; isConteDropTarget.value = targetId; };
+        const dragOverConteScript = (targetId) => { if (draggingDrawingIndex.value !== null) return; if (!draggingConteScript.value) return; if (isConteDropTarget.value !== targetId) isConteDropTarget.value = targetId; };
         // 特定のセリフの上にドロップした場合（挿入・並び替え）
         const dropOnConteScript = (targetScript) => {
             const sourceScriptRef = draggingConteScript.value;
