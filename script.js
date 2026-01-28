@@ -493,7 +493,7 @@ createApp({
                 const refKey = `${pIndex}-${sIndex}-text`;
                 const el = scriptInputRefs.value[refKey];
                 if (el) {
-                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
                     el.focus();
                 }
             }, 100);
