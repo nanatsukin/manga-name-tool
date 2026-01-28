@@ -468,6 +468,24 @@ createApp({
             });
         };
 
+        // コンテからプロットへジャンプ
+        const jumpToPlot = async (pIndex, script) => {
+            const sIndex = pages.value[pIndex].scripts.findIndex(s => s.id === script.id);
+            if (sIndex === -1) return;
+
+            await changeMode('plot');
+
+            // 描画と展開を待ってからスクロール
+            setTimeout(() => {
+                const refKey = `${pIndex}-${sIndex}-text`;
+                const el = scriptInputRefs.value[refKey];
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.focus();
+                }
+            }, 100);
+        };
+
         // --- ドラッグ＆ドロップ（プロット） ---
         const dragStart = (pIndex, idx) => { draggingItem.value = { pIndex, idx }; };
         const dragOverScript = (pIndex, idx) => { if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) { dropTarget.value = null; return; } dropTarget.value = { pIndex, idx }; };
@@ -1363,7 +1381,7 @@ createApp({
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
-            openDrawingModal, closeDrawingModal
+            openDrawingModal, closeDrawingModal, jumpToPlot
         };
     }
 }).mount('#app');

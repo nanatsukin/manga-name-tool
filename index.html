@@ -442,6 +442,10 @@
                     <button @click="clearCurrentPageCanvas"
                         class="px-3 py-1 rounded bg-red-900 hover:bg-red-800 text-xs ml-4"><i
                             class="fas fa-trash-can"></i> 全消去</button>
+
+                    <button @click="addDrawing(activePageIndex)"
+                        class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-500 shadow"><i
+                            class="fas fa-plus"></i> コマ追加</button>
                 </div>
 
                 <div class="flex-1 overflow-hidden flex">
@@ -450,9 +454,6 @@
                         <div class="w-full max-w-4xl space-y-6 pb-20">
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="text-sm font-bold text-gray-400">絵コンテ構成</h3>
-                                <button @click="addDrawing(activePageIndex)"
-                                    class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-500 shadow"><i
-                                        class="fas fa-plus"></i> コマ追加</button>
                             </div>
 
                             <div v-if="pages[activePageIndex].drawings.length === 0"
@@ -516,6 +517,7 @@
                                     <div v-for="script in getScriptsForDrawing(activePageIndex, drawing.id)"
                                         :key="script.id" draggable="true"
                                         @dragstart="dragStartConteScript($event, script)" @dragend="dragEndConteScript"
+                                        @dblclick.stop="jumpToPlot(activePageIndex, script)" title="ダブルクリックでプロットへ移動"
                                         @drop.stop="dropOnConteScript(script)" @dragover.prevent
                                         class="bg-gray-700 border-l-4 mb-2 p-3 rounded cursor-move hover:bg-gray-600 text-sm shadow-sm hover:translate-x-1 transition-transform"
                                         :class="script.char ? 'border-blue-500' : 'border-green-500'">
@@ -545,6 +547,7 @@
                             <div v-for="script in getUnassignedScripts(activePageIndex)" :key="script.id"
                                 draggable="true" @dragstart="dragStartConteScript($event, script)"
                                 @dragend="dragEndConteScript" @drop.stop="dropOnConteScript(script)" @dragover.prevent
+                                @dblclick.stop="jumpToPlot(activePageIndex, script)" title="ダブルクリックでプロットへ移動"
                                 class="p-2 rounded text-sm border-l-4 cursor-move hover:bg-gray-800 transition shadow-sm border border-gray-700 hover:brightness-110"
                                 :class="script.char ? 'bg-gray-800 border-blue-600' : 'bg-gray-800 border-green-600'">
 
