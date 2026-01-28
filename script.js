@@ -428,7 +428,11 @@ createApp({
         const prevPage = async () => { if (activePageIndex.value > 0) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value--; } };
         const selectItem = (id) => { selectedItemId.value = id; if (id === null) isImageEditMode.value = false; };
         const toggleImageEditMode = () => { isImageEditMode.value = !isImageEditMode.value; };
-        const getUnassignedScripts = (pIdx) => pages.value[pIdx].scripts.filter(s => !s.drawingId);
+        const getUnassignedScripts = (pIdx) => {
+            const page = pages.value[pIdx];
+            const validDrawingIds = new Set(page.drawings.map(d => d.id));
+            return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
+        };
         const getScriptsForDrawing = (pIdx, drawingId) => pages.value[pIdx].scripts.filter(s => s.drawingId === drawingId);
         const addDrawing = (pIdx) => { const newDrawing = { id: Date.now() + Math.random(), imgSrc: null, layout: { x: 50, y: 50, w: 300, h: 200, z: 1 }, inner: { scale: 1, x: 0, y: 0 }, history: [], historyStep: -1 }; pages.value[pIdx].drawings.push(newDrawing); nextTick(() => saveHistory(newDrawing)); };
         const removeDrawing = (pIdx, idx) => { if (confirm('削除しますか？')) { const removedId = pages.value[pIdx].drawings[idx].id; if (pages.value[pIdx].drawings[idx].imgSrc) URL.revokeObjectURL(pages.value[pIdx].drawings[idx].imgSrc); pages.value[pIdx].scripts.forEach(s => { if (s.drawingId === removedId) s.drawingId = null; }); pages.value[pIdx].drawings.splice(idx, 1); } };
