@@ -454,6 +454,10 @@
                         <div class="w-full max-w-4xl space-y-6 pb-20">
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="text-sm font-bold text-gray-400">絵コンテ構成</h3>
+                                <div v-if="drawingCountWarning" :class="drawingCountWarning.class"
+                                    class="px-2 py-1 rounded border text-xs font-bold flex items-center gap-1 transition-colors">
+                                    <i class="fas fa-exclamation-triangle"></i> {{ drawingCountWarning.text }}
+                                </div>
                             </div>
 
                             <div v-if="pages[activePageIndex].drawings.length === 0"

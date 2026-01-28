@@ -87,6 +87,19 @@ createApp({
         const displayH = computed(() => pageConfig.value.canvasH * pageConfig.value.scale);
         const pageStyle = computed(() => ({ width: displayW.value + 'px', height: displayH.value + 'px' }));
 
+        // コマ数警告
+        const drawingCountWarning = computed(() => {
+            const page = pages.value[activePageIndex.value];
+            if (!page) return null;
+            const count = page.drawings.length;
+            if (count >= 9) {
+                return { text: `コマ数過多 (${count})`, class: 'text-red-400 bg-red-900/30 border-red-500' };
+            } else if (count >= 7) {
+                return { text: `コマ数多め (${count})`, class: 'text-yellow-400 bg-yellow-900/30 border-yellow-500' };
+            }
+            return null;
+        });
+
         // 見開き表示用の配列生成
         const spreads = computed(() => {
             const result = [];
@@ -1401,7 +1414,7 @@ createApp({
             currentFileHandle, saveProject, saveProjectAs, loadProjectFromFile,
             undo, redo, canUndo, canRedo,
             pageStyle, guideProps, isProcessing, isTextLayerMode, isHideGuideMode, isHideDrawingMode, isTransparentMode,
-            adjustHeight, focusNext, focusText, focusPrev, setInputRef, uniqueCharacters, fontOptions, fileInput, handleFileChange,
+            drawingCountWarning, adjustHeight, focusNext, focusText, focusPrev, setInputRef, uniqueCharacters, fontOptions, fileInput, handleFileChange,
             isMenuOpen, handleScriptTextKeydown, handleScriptTextKeydown,
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
