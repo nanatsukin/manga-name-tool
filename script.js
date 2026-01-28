@@ -71,6 +71,8 @@ createApp({
         const canvasRefs = ref({});
         const currentFileHandle = ref(null);
         const scriptInputRefs = ref({});
+        const nameModeContainer = ref(null);
+        let nameModeScrollTop = 0;
 
         // --- Computed Properties ---
         const saveStatusText = computed(() => {
@@ -382,7 +384,29 @@ createApp({
         };
 
         // --- ページ操作系メソッド ---
-        const changeMode = async (mode) => { if (currentMode.value === 'conte') await saveAllCanvases(); currentMode.value = mode; selectedItemId.value = null; isImageEditMode.value = false; if (mode === 'plot') nextTick(() => resizeTextareas()); };
+        const changeMode = async (mode) => {
+            // 現在のモードがネームモードなら、スクロール位置を保存
+            if (currentMode.value === 'name' && nameModeContainer.value) {
+                nameModeScrollTop = nameModeContainer.value.scrollTop;
+            }
+
+            if (currentMode.value === 'conte') await saveAllCanvases();
+            currentMode.value = mode;
+            selectedItemId.value = null;
+            isImageEditMode.value = false;
+
+            if (mode === 'plot') {
+                nextTick(() => resizeTextareas());
+            }
+            // 新しいモードがネームモードなら、スクロール位置を復元
+            else if (mode === 'name') {
+                nextTick(() => {
+                    if (nameModeContainer.value) {
+                        nameModeContainer.value.scrollTop = nameModeScrollTop;
+                    }
+                });
+            }
+        };
         const addPage = async () => { if (currentMode.value === 'conte') await saveAllCanvases(); pages.value.push({ id: Date.now(), scripts: [], drawings: [] }); };
         const deletePage = (idx) => {
             // 最初のページの場合は前のページがないため、単なる削除確認にするか、何もしない
@@ -1419,7 +1443,7 @@ createApp({
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
-            openDrawingModal, closeDrawingModal, jumpToPlot
+            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer
         };
     }
 }).mount('#app');

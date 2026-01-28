@@ -564,7 +564,7 @@
                 </div>
             </div>
 
-            <div v-if="currentMode === 'name'" class="h-full overflow-y-auto bg-gray-600 p-8"
+            <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-600 p-8"
                 @mousedown="selectItem(null)">
                 <div class="flex flex-col items-center origin-top pb-20">
                     <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container">
@@ -648,7 +648,8 @@
                                 :class="{'selected-item border-blue-500 bg-yellow-100 bg-opacity-20': selectedItemId === script.id}"
                                 :style="{ left: script.layout.x + 'px', top: script.layout.y + 'px', zIndex: 10 }"
                                 @mousedown.stop="selectItem(script.id); startLayoutDrag($event, script)"
-                                @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script)">
+                                @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script)"
+                                @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
 
                                 <div class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF', 
                                          fontFamily: pageConfig.fontFamily }">
