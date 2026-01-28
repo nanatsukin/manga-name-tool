@@ -1277,8 +1277,8 @@ createApp({
             const fullText = currentScript.text || '';
 
             // 前半・後半に分割
-            const firstPart = fullText.substring(0, cursor);
-            const secondPart = fullText.substring(cursor);
+            const firstPart = fullText.substring(0, cursor).replace(/\n+$/, '');
+            const secondPart = fullText.substring(cursor).replace(/^\n+/, '');
 
             // 現在の行を更新
             currentScript.text = firstPart;
