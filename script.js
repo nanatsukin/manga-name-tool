@@ -1860,7 +1860,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
-            jumpToConte, jumpToName, progress, progressMessage
+            jumpToConte, jumpToName, progress, progressMessage, exportData 
         };
     }
 }).mount('#app');
