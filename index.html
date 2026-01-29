@@ -26,7 +26,13 @@
 
         <div v-if="isProcessing" class="loading-overlay">
             <i class="fas fa-spinner fa-spin text-5xl mb-4 text-blue-500"></i>
-            <div class="text-xl font-bold tracking-widest animate-pulse">処理中...</div>
+            <div class="text-xl font-bold tracking-widest animate-pulse">{{ exportStatusText || '処理中...' }}</div>
+
+            <div v-if="exportProgress > 0" class="w-64 h-2 bg-gray-700 rounded-full mt-4 overflow-hidden">
+                <div class="h-full bg-blue-500 transition-all duration-300" :style="{ width: exportProgress + '%' }">
+                </div>
+            </div>
+            <div v-if="exportProgress > 0" class="text-xs mt-2 text-gray-400">{{ exportProgress }}%</div>
         </div>
 
         <div v-if="showDrawingModal" class="fixed inset-0 z-[9999] bg-gray-900 flex flex-col">
@@ -110,27 +116,45 @@
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2 text-gray-300">形式</label>
                     <div class="flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="pdf" class="accent-blue-500"> PDF (単一ファイル)</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG (連番画像ZIP)</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD (レイヤー保持ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.format" value="pdf" class="accent-blue-500"> PDF
+                            (単一ファイル)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG
+                            (連番画像ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD
+                            (レイヤー保持ZIP)</label>
                     </div>
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-bold mb-2 text-gray-300">ページ範囲</label>
                     <div class="space-y-2 text-sm">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{ pages.length }}ページ)</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ (Page {{ activePageIndex + 1 }})</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{
+                            pages.length }}ページ)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ
+                            (Page {{ activePageIndex + 1 }})</label>
                         <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="custom" class="accent-blue-500"> ページ指定:</label>
-                            <input type="number" v-model.number="exportSettings.rangeStart" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                    v-model="exportSettings.rangeType" value="custom" class="accent-blue-500">
+                                ページ指定:</label>
+                            <input type="number" v-model.number="exportSettings.rangeStart"
+                                class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1"
+                                :max="pages.length">
                             <span>〜</span>
-                            <input type="number" v-model.number="exportSettings.rangeEnd" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <input type="number" v-model.number="exportSettings.rangeEnd"
+                                class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1"
+                                :max="pages.length">
                         </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 mt-6">
-                    <button @click="showExportModal = false" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
-                    <button @click="executeExport" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
+                    <button @click="showExportModal = false"
+                        class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
+                    <button @click="executeExport"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
                 </div>
             </div>
         </div>
@@ -328,9 +352,11 @@
             <div v-if="currentMode === 'plot'" class="h-full overflow-y-auto pb-20">
                 <div class="max-w-6xl mx-auto p-0 md:p-4">
                     <!-- プロット全体操作ヘッダー -->
-                    <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex justify-between items-center shadow-md mx-2 md:mx-0 sticky top-0 z-30">
+                    <div
+                        class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex justify-between items-center shadow-md mx-2 md:mx-0 sticky top-0 z-30">
                         <span class="text-sm font-bold text-gray-300 pl-2"><i class="fas fa-list"></i> プロット編集</span>
-                        <button @click="sortAllScriptsByConteOrder" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-2">
+                        <button @click="sortAllScriptsByConteOrder"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-2">
                             <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
                         </button>
                     </div>
