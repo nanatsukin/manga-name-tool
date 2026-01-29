@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script src="https://unpkg.com/idb-keyval@6.2.0/dist/umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link id="font-awesome" rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
@@ -103,6 +104,37 @@
             </div>
         </div>
 
+        <div v-if="showExportModal" class="modal-overlay" @click.self="showExportModal = false">
+            <div class="modal-content">
+                <h2 class="text-lg font-bold mb-4 border-b border-gray-600 pb-2">書き出し設定</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2 text-gray-300">形式</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="pdf" class="accent-blue-500"> PDF (単一ファイル)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG (連番画像ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD (レイヤー保持ZIP)</label>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2 text-gray-300">ページ範囲</label>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{ pages.length }}ページ)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ (Page {{ activePageIndex + 1 }})</label>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="custom" class="accent-blue-500"> ページ指定:</label>
+                            <input type="number" v-model.number="exportSettings.rangeStart" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <span>〜</span>
+                            <input type="number" v-model.number="exportSettings.rangeEnd" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button @click="showExportModal = false" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
+                    <button @click="executeExport" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
+                </div>
+            </div>
+        </div>
+
         <header class="bg-gray-800 border-b border-gray-700 min-h-[40px] flex flex-col z-50 shrink-0 relative">
 
             <div class="flex justify-between items-center h-10 px-2 w-full">
@@ -153,9 +185,9 @@
                         class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded transition flex items-center gap-1">
                         <i class="fas fa-file-alt"></i> プロット一括
                     </button>
-                    <button @click="exportData('png')" :disabled="isExporting"
+                    <button @click="openExportModal" :disabled="isExporting"
                         class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition"><i class="fas"
-                            :class="isExporting ? 'fa-spinner fa-spin' : 'fa-image'"></i> PNG</button>
+                            :class="isExporting ? 'fa-spinner fa-spin' : 'fa-file-export'"></i> 書き出し</button>
                 </div>
 
                 <button @click="isMenuOpen = !isMenuOpen"
@@ -201,9 +233,9 @@
                         class="bg-indigo-700 text-white py-1.5 rounded text-xs">
                         <i class="fas fa-file-alt"></i> プロット一括
                     </button>
-                    <button @click="exportData('png'); isMenuOpen=false"
-                        class="bg-blue-700 text-white py-1.5 rounded text-xs"><i class="fas fa-image"></i>
-                        PNG出力</button>
+                    <button @click="openExportModal(); isMenuOpen=false"
+                        class="bg-blue-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-export"></i>
+                        書き出し</button>
                 </div>
             </div>
         </header>
