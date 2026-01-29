@@ -480,8 +480,7 @@
                             <div v-for="(drawing, dIdx) in pages[activePageIndex].drawings" :key="drawing.id"
                                 :draggable="isDrawingDragReady" @dragstart="dragStartDrawing($event, dIdx)"
                                 @dragend="dragEndDrawing" @dragover.prevent="dragOverDrawing(dIdx)"
-                                @drop.stop="dropOnDrawing(dIdx)"
-                                :id="'conte-drawing-' + drawing.id"
+                                @drop.stop="dropOnDrawing(dIdx)" :id="'conte-drawing-' + drawing.id"
                                 class="bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-600 flex flex-row transition-transform duration-200"
                                 :class="{'drawing-dragging': draggingDrawingIndex === dIdx, 'drawing-drop-target': dropTargetDrawingIndex === dIdx}">
 
@@ -638,8 +637,8 @@
                                         @mousedown.stop="startLayoutResize($event, drawing, 'br')"
                                         @touchstart.stop="startLayoutResize($event, drawing, 'br')"></div>
                                 </div>
-                                <div
-                                    class="absolute top-0 left-0 bg-black text-white text-[10px] w-4 h-4 flex items-center justify-center opacity-0 group-hover/drawing:opacity-100 transition-opacity pointer-events-none z-50 no-export">
+                                <div class="absolute top-0 left-0 bg-black text-white text-[10px] w-4 h-4 flex items-center justify-center transition-opacity pointer-events-none z-50 no-export"
+                                    :class="selectedItemId === drawing.id ? 'opacity-100' : 'opacity-0 group-hover/drawing:opacity-100'">
                                     {{ dIdx+1 }}</div>
 
                                 <div v-if="selectedItemId === drawing.id"
