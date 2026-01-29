@@ -8,6 +8,7 @@ createApp({
         const currentMode = ref('plot'); // plot, conte, name
         const activePageIndex = ref(0);
         const isMenuOpen = ref(false);
+        const isSmallScreen = ref(false); // 画面幅検知用（初期値は仮、直後に計算）
 
         // UI状態
         const showSettings = ref(false);
@@ -89,6 +90,13 @@ createApp({
         const displayH = computed(() => pageConfig.value.canvasH * pageConfig.value.scale);
         const pageStyle = computed(() => ({ width: displayW.value + 'px', height: displayH.value + 'px' }));
 
+        // 画面サイズチェック（2ページ分収まるかどうか）
+        const checkScreenSize = () => {
+            const singleW = displayW.value;
+            // 2ページ分 + 余白(40px)が収まらないならSmallScreen
+            isSmallScreen.value = window.innerWidth < (singleW * 2 + 40);
+        };
+
         // コマ数警告
         const drawingCountWarning = computed(() => {
             const page = pages.value[activePageIndex.value];
@@ -104,6 +112,11 @@ createApp({
 
         // 見開き表示用の配列生成
         const spreads = computed(() => {
+            // 画面幅が狭い場合は強制的に単ページ表示にする
+            if (isSmallScreen.value) {
+                return pages.value.map((page, i) => [{ ...page, pageIndex: i }]);
+            }
+
             const result = [];
             if (pages.value.length > 0) result.push([{ ...pages.value[0], pageIndex: 0 }]);
             for (let i = 1; i < pages.value.length; i += 2) {
@@ -418,10 +431,11 @@ createApp({
             if (mode === 'plot') {
                 nextTick(() => resizeTextareas());
             }
-            // 新しいモードがネームモードなら、スクロール位置を復元
+           
             else if (mode === 'name') {
                 nextTick(() => {
                     if (nameModeContainer.value) {
+                         // 新しいモードがネームモードなら、スクロール位置を復元
                         nameModeContainer.value.scrollTop = nameModeScrollTop;
                     }
                 });
@@ -1670,6 +1684,9 @@ createApp({
             autoSaveTimer = setTimeout(autoSaveToIDB, 2000);
         }, { deep: true });
 
+        // スケールや設定変更時にも画面サイズ判定を行う
+        watch(displayW, checkScreenSize);
+
         onMounted(async () => {
             try {
                 const savedData = await get('manga_project_autosave');
@@ -1711,7 +1728,12 @@ createApp({
             }
 
             // ウィンドウサイズが変更されたときに全textareaの高さを再計算
-            window.addEventListener('resize', resizeTextareas);
+            window.addEventListener('resize', () => {
+                resizeTextareas();
+                checkScreenSize();
+            });
+            // 初期チェック
+            checkScreenSize();
 
             // クリーンアップ
             window.addEventListener('keydown', handleGlobalKeydown);
