@@ -13,6 +13,7 @@ createApp({
         // UI状態
         const showSettings = ref(false);
         const showTextModal = ref(false);
+        const showExportModal = ref(false);
         const copiedPageId = ref(null);
         const showDrawingModal = ref(false);
         const currentEditingDrawing = ref(null);
@@ -23,6 +24,8 @@ createApp({
         const isRestoring = ref(true);
         const isProcessing = ref(false);
         const isExporting = ref(false);
+        const progress = ref(0);
+        const progressMessage = ref('');
         let autoSaveTimer = null;
 
         // データ・設定
@@ -1326,13 +1329,16 @@ createApp({
             }
         };
 
-        const exportData = async (format = 'png') => {
+        const exportData = async (format = 'png', optSettings = null) => {
             if (currentMode.value !== 'name') {
                 alert('ネームモードに切り替えてから実行します');
                 currentMode.value = 'name';
                 await nextTick();
             }
             
+            // 設定取得
+            const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
+
             const useDirectory = 'showDirectoryPicker' in window;
             let dirHandle = null;
             if (useDirectory) {
@@ -1345,6 +1351,8 @@ createApp({
             
             isExporting.value = true;
             isProcessing.value = true;
+            progress.value = 0;
+            progressMessage.value = '準備中...';
             
             if (format === 'psd') {
                 isTextLayerMode.value = true;
@@ -1367,6 +1375,11 @@ createApp({
             const zip = useDirectory ? null : new JSZip();
 
             for (let i = 0; i < pageElements.length; i++) {
+                // 進捗更新
+                progress.value = Math.round((i / pageElements.length) * 100);
+                progressMessage.value = `${i + 1} / ${pageElements.length} ページ書き出し中...`;
+                await new Promise(r => setTimeout(r, 10)); // UI描画更新のためのウェイト
+
                 const el = pageElements[i];
                 if (el.classList.contains('opacity-0')) continue;
                 
@@ -1580,6 +1593,8 @@ createApp({
             isTransparentMode.value = false;
             isExporting.value = false;
             isProcessing.value = false;
+            progress.value = 0;
+            progressMessage.value = '';
             
             if (zip) {
                 zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip"));
@@ -1788,7 +1803,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder,
-            jumpToConte, jumpToName, 
+            jumpToConte, jumpToName, progress, progressMessage
         };
     }
 }).mount('#app');
