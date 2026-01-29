@@ -27,6 +27,12 @@ createApp({
         const progress = ref(0);
         const progressMessage = ref('');
         let autoSaveTimer = null;
+        const exportSettings = ref({
+            format: 'png',
+            rangeType: 'all',
+            rangeStart: 1,
+            rangeEnd: 1
+        });
 
         // データ・設定
         const pageConfig = ref({
@@ -1329,6 +1335,18 @@ createApp({
             }
         };
 
+        // 書き出しモーダルを開く
+        const openExportModal = () => {
+            exportSettings.value.rangeEnd = pages.value.length;
+            showExportModal.value = true;
+        };
+
+        // 書き出し実行
+        const executeExport = () => {
+            showExportModal.value = false;
+            exportData(exportSettings.value.format, exportSettings.value);
+        };
+
         const exportData = async (format = 'png', optSettings = null) => {
             if (currentMode.value !== 'name') {
                 alert('ネームモードに切り替えてから実行します');
@@ -1390,6 +1408,10 @@ createApp({
                     const domW = el.clientWidth;
                     const ratio = canvasW / domW;
                     const pageNum = el.id.replace('render-page-', '');
+                    const pageIndex = parseInt(pageNum);
+
+                    // 範囲外のページはスキップ
+                    if (!targetPageIndices.includes(pageIndex)) continue;
 
                     if (format === 'png') {
                         const dataUrl = await htmlToImage.toPng(el, {
@@ -1404,9 +1426,10 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
-                        const blob = await (await fetch(dataUrl)).blob();
-                        const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.png`;
                         
+                        // PNG保存
+                        const blob = await (await fetch(dataUrl)).blob();
+                        const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.png`;
                         if (useDirectory && dirHandle) {
                             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
                             const writable = await fileHandle.createWritable();
@@ -1443,7 +1466,6 @@ createApp({
                         drawCanvas.width = canvasW;
                         drawCanvas.height = canvasH;
                         const dCtx = drawCanvas.getContext('2d');
-                        const pageIndex = parseInt(pageNum);
                         const pageData = pages.value[pageIndex];
                         
                         if (pageData) {
@@ -1571,7 +1593,7 @@ createApp({
                         
                         const buffer = agPsd.writePsd(psd);
                         const blob = new Blob([buffer]);
-                        const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.psd`;
+                        const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.psd`;
                         
                         if (useDirectory && dirHandle) {
                             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
@@ -1794,7 +1816,7 @@ createApp({
             isDrawingDragReady, onHandleDown, onHandleUp,
             selectedItemId, selectItem, isImageEditMode, toggleImageEditMode, onImageWheel, zoomImage,
             startLayoutDrag, startLayoutResize, moveItemPage, moveDrawingPage, exportData,
-            currentFileHandle, saveProject, saveProjectAs, loadProjectFromFile,
+            currentFileHandle, saveProject, saveProjectAs, loadProjectFromFile, showExportModal, exportSettings, openExportModal, executeExport,
             undo, redo, canUndo, canRedo,
             pageStyle, guideProps, isProcessing, isTextLayerMode, isHideGuideMode, isHideDrawingMode, isTransparentMode,
             drawingCountWarning, adjustHeight, focusNext, focusText, focusPrev, setInputRef, uniqueCharacters, fontOptions, fileInput, handleFileChange,

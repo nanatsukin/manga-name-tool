@@ -15,7 +15,371 @@
     <script src="https://unpkg.com/idb-keyval@6.2.0/dist/umd.js"></script>
     <link id="font-awesome" rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        /* --- 基本スタイル --- */
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #111827;
+            color: #e5e5e5;
+            overflow: hidden;
+        }
+
+        /* --- ユーティリティクラス --- */
+        .tab-active {
+            border-bottom: 2px solid #3b82f6;
+            color: #3b82f6;
+        }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: upright;
+            white-space: pre-wrap;
+            font-feature-settings: "palt";
+            line-height: 1.5;
+        }
+
+        canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        /* --- ネーム（キャンバス）表示関連 --- */
+        .manga-page {
+            background: white;
+            color: black;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+            transition: width 0.3s, height 0.3s;
+        }
+
+        .guide-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .guide-path,
+        .guide-rect {
+            fill: none;
+            stroke: #8892e6;
+            stroke-width: 0.5px;
+            vector-effect: non-scaling-stroke;
+            opacity: 0.8;
+        }
+
+        .spread-container {
+            display: flex;
+            justify-content: center;
+            flex-direction: row-reverse;
+            /* 右開き */
+            gap: 10px;
+            margin-bottom: 40px;
+        }
+
+        /* --- ドラッグ＆ドロップ(D&D) スタイル --- */
+        .drop-target-active {
+            background-color: rgba(59, 130, 246, 0.2) !important;
+            border: 2px dashed #60a5fa !important;
+        }
+
+        .drawing-dragging {
+            opacity: 0.4;
+            filter: grayscale(100%);
+        }
+
+        .drawing-drop-target {
+            border: 2px solid #fbbf24 !important;
+            transform: scale(1.02);
+            transition: transform 0.2s;
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.5);
+        }
+
+        .cursor-grab {
+            cursor: grab;
+        }
+
+        .cursor-grabbing {
+            cursor: grabbing;
+        }
+
+        /* --- リサイズハンドル --- */
+        .resize-handle {
+            width: 10px;
+            height: 10px;
+            background: white;
+            border: 1px solid #3b82f6;
+            position: absolute;
+            z-index: 50;
+        }
+
+        .rh-tl {
+            top: -5px;
+            left: -5px;
+            cursor: nwse-resize;
+        }
+
+        .rh-tr {
+            top: -5px;
+            right: -5px;
+            cursor: nesw-resize;
+        }
+
+        .rh-bl {
+            bottom: -5px;
+            left: -5px;
+            cursor: nesw-resize;
+        }
+
+        .rh-br {
+            bottom: -5px;
+            right: -5px;
+            cursor: nwse-resize;
+        }
+
+        /* --- アイテム選択・編集状態 --- */
+        .selected-item {
+            outline: 2px solid #3b82f6;
+            z-index: 100 !important;
+        }
+
+        .image-edit-mode {
+            outline: 2px dashed #10b981 !important;
+            z-index: 100 !important;
+            cursor: move;
+        }
+
+        /* --- エクスポート時の表示制御 --- */
+        .exporting .no-export {
+            display: none !important;
+        }
+
+        .exporting .selected-item {
+            outline: none !important;
+        }
+
+        .exporting .image-edit-mode {
+            outline: none !important;
+        }
+
+        .exporting .manga-page {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        /* --- 表示オプション --- */
+        .hide-guides .guide-layer {
+            display: none !important;
+        }
+
+        .hide-drawings .group\/drawing {
+            opacity: 0 !important;
+        }
+
+        /* --- モーダル・UIコンポーネント --- */
+        .modal-overlay {
+            background: rgba(15, 23, 42, 0.85);
+            /* 少し濃く、青みを帯びた黒 */
+            backdrop-filter: blur(4px);
+            /* 背景をぼかす */
+            position: fixed;
+            inset: 0;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90%;
+            /* 85vh から少し広げるとスマホで見やすいです */
+            color: white;
+            border: 1px solid #374151;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-row {
+            display: flex;
+            /* md:flex-row をHTML側で指定するため、ここでは基本方向を決め打ちしない */
+            border-bottom: 1px solid #374151;
+            padding: 0;
+            /* 左右パディングをなくして幅を広げる */
+            min-height: 44px;
+            transition: background-color 0.1s;
+        }
+
+        /* スマホ時に入力欄が横に潰れないように調整 */
+        @media (max-width: 768px) {
+            .panel-input {
+                font-size: 16px !important;
+                /* iPhoneのズーム防止 */
+                padding: 12px;
+            }
+
+            /* ト書きの時は背景を変えて判別しやすくする */
+            .panel-row:has(input[value=""]) {
+                background-color: rgba(16, 185, 129, 0.05);
+            }
+        }
+
+        .panel-row:nth-child(even) {
+            background-color: #1f2937;
+        }
+
+        .panel-row:hover {
+            background-color: #374151;
+        }
+
+        .panel-input {
+            background: transparent;
+            border: none;
+            color: #e5e5e5;
+            outline: none;
+            width: 100%;
+            padding: 8px 8px;
+            line-height: 1.6;
+            /* 行間を少し広げて読みやすく */
+            display: block;
+            /* インライン要素による隙間を防止 */
+            box-sizing: border-box;
+            /* パディングを含めて高さを計算 */
+        }
+
+        .panel-input:focus {
+            background: #111827;
+            color: white;
+        }
+
+        textarea.panel-input {
+            resize: none;
+            overflow: hidden;
+            min-height: 44px;
+            height: auto;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            user-select: none;
+        }
+
+        .save-status-indicator {
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: opacity 0.3s;
+        }
+
+        /* --- モバイル対応レスポンシブ設定 --- */
+        @media (max-width: 768px) {
+
+            /* メインエリアの設定 */
+            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex {
+                display: block;
+                position: relative;
+            }
+
+            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex>div.flex-1 {
+                width: 100%;
+                height: 100%;
+                overflow-y: auto;
+                padding-bottom: 220px;
+                border-right: none;
+                padding-left: 10px;
+                /* 左右に余白を追加 */
+                padding-right: 10px;
+            }
+
+            /* 未割り当てリスト（下部固定） */
+            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex>div.w-\[280px\] {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 200px;
+                z-index: 50;
+                border-top: 2px solid #3b82f6;
+                box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+                flex: none;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* コマ（カード）のコンテナ */
+            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.border.border-gray-600.flex.flex-row {
+                margin-bottom: 24px !important;
+                /* コマ間のスペース */
+                height: 160px;
+                /*高さを少し抑える*/
+            }
+
+            /* 左側の画像エリア：幅を固定（例えば画面の40%程度） */
+            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:first-child {
+                width: 140px !important;
+                /* スマホで見やすい固定幅 */
+                flex-shrink: 0;
+                border-right: 1px solid #4b5563;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* 画像表示部分（キャンバスプレビュー） */
+            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:first-child>div.relative {
+                width: 100% !important;
+                height: 100% !important;
+                background-color: #ffffff;
+            }
+
+            /* プレビュー画像 */
+            .preview-image {
+                width: 100%;
+                height: 100%;
+                object-fit: contain;
+            }
+
+            /* 右側のセリフエリア */
+            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:last-child {
+                flex: 1;
+                min-width: 0;
+                /* 文字がはみ出さないように */
+                overflow-y: auto;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -25,10 +389,7 @@
 
         <div v-if="isProcessing" class="loading-overlay">
             <i class="fas fa-spinner fa-spin text-5xl mb-4 text-blue-500"></i>
-            <div class="text-xl font-bold tracking-widest animate-pulse mb-4">{{ progressMessage || '処理中...' }}</div>
-            <div class="w-64 h-2 bg-gray-700 rounded-full overflow-hidden border border-gray-600" v-if="progress > 0">
-                <div class="h-full bg-blue-500 transition-all duration-300 ease-out" :style="{ width: progress + '%' }"></div>
-            </div>
+            <div class="text-xl font-bold tracking-widest animate-pulse">処理中...</div>
         </div>
 
         <div v-if="showDrawingModal" class="fixed inset-0 z-[9999] bg-gray-900 flex flex-col">
@@ -106,6 +467,36 @@
             </div>
         </div>
 
+        <div v-if="showExportModal" class="modal-overlay" @click.self="showExportModal = false">
+            <div class="modal-content">
+                <h2 class="text-lg font-bold mb-4 border-b border-gray-600 pb-2">書き出し設定</h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2 text-gray-300">形式</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG (連番画像ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD (レイヤー保持ZIP)</label>
+                    </div>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-bold mb-2 text-gray-300">ページ範囲</label>
+                    <div class="space-y-2 text-sm">
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{ pages.length }}ページ)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ (Page {{ activePageIndex + 1 }})</label>
+                        <div class="flex items-center gap-2">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="custom" class="accent-blue-500"> ページ指定:</label>
+                            <input type="number" v-model.number="exportSettings.rangeStart" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <span>〜</span>
+                            <input type="number" v-model.number="exportSettings.rangeEnd" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button @click="showExportModal = false" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
+                    <button @click="executeExport" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
+                </div>
+            </div>
+        </div>
+
         <header class="bg-gray-800 border-b border-gray-700 min-h-[40px] flex flex-col z-50 shrink-0 relative">
 
             <div class="flex justify-between items-center h-10 px-2 w-full">
@@ -156,9 +547,9 @@
                         class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded transition flex items-center gap-1">
                         <i class="fas fa-file-alt"></i> プロット一括
                     </button>
-                    <button @click="exportData('png')" :disabled="isExporting"
+                    <button @click="openExportModal" :disabled="isExporting"
                         class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition"><i class="fas"
-                            :class="isExporting ? 'fa-spinner fa-spin' : 'fa-image'"></i> PNG</button>
+                            :class="isExporting ? 'fa-spinner fa-spin' : 'fa-file-export'"></i> 書き出し</button>
                 </div>
 
                 <button @click="isMenuOpen = !isMenuOpen"
@@ -204,9 +595,9 @@
                         class="bg-indigo-700 text-white py-1.5 rounded text-xs">
                         <i class="fas fa-file-alt"></i> プロット一括
                     </button>
-                    <button @click="exportData('png'); isMenuOpen=false"
-                        class="bg-blue-700 text-white py-1.5 rounded text-xs"><i class="fas fa-image"></i>
-                        PNG出力</button>
+                    <button @click="openExportModal(); isMenuOpen=false"
+                        class="bg-blue-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-export"></i>
+                        書き出し</button>
                 </div>
             </div>
         </header>
