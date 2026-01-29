@@ -187,6 +187,33 @@ createApp({
             }
         };
 
+        // コンテのコマ順序に合わせてプロットを並び替える（単一ページ）
+        const sortScriptsByConteOrder = (pageIndex) => {
+            const page = pages.value[pageIndex];
+            if (!page) return;
+
+            let newScripts = [];
+            // 1. 各コマに割り当てられたスクリプトを、コマの並び順に追加
+            for (const drawing of page.drawings) {
+                const scripts = getScriptsForDrawing(pageIndex, drawing.id);
+                newScripts.push(...scripts);
+            }
+            // 2. 未割り当てのスクリプトを末尾に追加
+            const unassigned = getUnassignedScripts(pageIndex);
+            newScripts.push(...unassigned);
+            // 3. ページのスクリプト配列を更新
+            page.scripts = newScripts;
+        };
+
+        // 全ページのプロットをコンテ順に並び替える
+        const sortAllScriptsByConteOrder = () => {
+            if (!confirm('全ページのプロットをコンテのコマ順に合わせて並び替えますか？')) return;
+            pages.value.forEach((_, index) => {
+                sortScriptsByConteOrder(index);
+            });
+            nextTick(() => resizeTextareas());
+        };
+
         // --- ヘルパー関数 ---
         const getPageTextPreview = (page) => {
             if (!page.scripts) return '';
@@ -235,6 +262,7 @@ createApp({
                 alert('コピー失敗: ' + e);
             }
         };
+        
         // タッチ・マウス両対応の座標取得関数
         const getClientPos = (e) => {
             if (e.touches && e.touches.length > 0) {
@@ -1759,8 +1787,8 @@ createApp({
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
-            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer,
-            jumpToConte, jumpToName
+            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder,
+            jumpToConte, jumpToName, 
         };
     }
 }).mount('#app');
