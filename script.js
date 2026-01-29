@@ -233,21 +233,36 @@ createApp({
         // ガイド描画用の座標計算
         const guideProps = (pageIndex) => {
             const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = pageConfig.value;
-            const fx = (canvasW - finishW) / 2; const fy = (canvasH - finishH) / 2;
+            
+            const fx = (canvasW - finishW) / 2;
+            const fy = (canvasH - finishH) / 2;
             const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
-            const si = isRight ? safeInside : safeOutside; const so = isRight ? safeOutside : safeInside;
+            const si = isRight ? safeInside : safeOutside;
+            const so = isRight ? safeOutside : safeInside;
 
-            const safeX = (fx + si) * scale; const safeY = (fy + safeTop) * scale;
-            const safeW = (finishW - si - so) * scale; const safeH = (finishH - safeTop - safeBottom) * scale;
-            const finishX = fx * scale; const finishY = fy * scale;
-            const finishW_s = finishW * scale; const finishH_s = finishH * scale;
-            const bleedX = (fx - bleed) * scale; const bleedY = (fy - bleed) * scale;
-            const bleedW = (finishW + bleed * 2) * scale; const bleedH = (finishH + bleed * 2) * scale;
-            const cx = (canvasW / 2) * scale; const cy = (canvasH / 2) * scale;
+            const safeX = (fx + si) * scale;
+            const safeY = (fy + safeTop) * scale;
+            const safeW = (finishW - si - so) * scale;
+            const safeH = (finishH - safeTop - safeBottom) * scale;
+            
+            const finishX = fx * scale;
+            const finishY = fy * scale;
+            const finishW_s = finishW * scale;
+            const finishH_s = finishH * scale;
+            
+            const bleedX = (fx - bleed) * scale;
+            const bleedY = (fy - bleed) * scale;
+            const bleedW = (finishW + bleed * 2) * scale;
+            const bleedH = (finishH + bleed * 2) * scale;
+            
+            const cx = (canvasW / 2) * scale;
+            const cy = (canvasH / 2) * scale;
 
             const tExt = 200 * scale;
-            const finishX_r = finishX + finishW_s; const finishY_b = finishY + finishH_s;
-            const bleedX_r = bleedX + bleedW; const bleedY_b = bleedY + bleedH;
+            const finishX_r = finishX + finishW_s;
+            const finishY_b = finishY + finishH_s;
+            const bleedX_r = bleedX + bleedW;
+            const bleedY_b = bleedY + bleedH;
 
             const cLen = 200 * scale;
             let dCenter = `M${cx},${bleedY} V${bleedY - tExt} M${cx - cLen},${bleedY - tExt / 2} H${cx + cLen} `;
@@ -265,7 +280,12 @@ createApp({
             dTonbo += `M${finishX_r},${bleedY_b} V${bleedY_b + cornerLen} M${bleedX_r},${bleedY_b} V${bleedY_b + cornerLen} `;
             dTonbo += `M${bleedX_r},${finishY_b} H${bleedX_r + cornerLen} M${bleedX_r},${bleedY_b} H${bleedX_r + cornerLen} `;
 
-            return { safeX, safeY, safeW, safeH, finishX, finishY, finishW: finishW_s, finishH: finishH_s, bleedX, bleedY, bleedW, bleedH, centerPath: dCenter, tonboPath: dTonbo };
+            return {
+                safeX, safeY, safeW, safeH,
+                finishX, finishY, finishW: finishW_s, finishH: finishH_s,
+                bleedX, bleedY, bleedW, bleedH,
+                centerPath: dCenter, tonboPath: dTonbo
+            };
         };
 
         // --- 入力フォーム制御 ---
@@ -471,8 +491,33 @@ createApp({
             return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
         };
         const getScriptsForDrawing = (pIdx, drawingId) => pages.value[pIdx].scripts.filter(s => s.drawingId === drawingId);
-        const addDrawing = (pIdx) => { const targetIdx = (typeof pIdx === 'number') ? pIdx : activePageIndex.value; const newDrawing = { id: Date.now() + Math.random(), imgSrc: null, layout: { x: 50, y: 50, w: 300, h: 200, z: 1 }, inner: { scale: 1, x: 0, y: 0 }, history: [], historyStep: -1 }; pages.value[targetIdx].drawings.push(newDrawing); nextTick(() => saveHistory(newDrawing)); };
-        const removeDrawing = (pIdx, idx) => { if (confirm('削除しますか？')) { const removedId = pages.value[pIdx].drawings[idx].id; if (pages.value[pIdx].drawings[idx].imgSrc) URL.revokeObjectURL(pages.value[pIdx].drawings[idx].imgSrc); pages.value[pIdx].scripts.forEach(s => { if (s.drawingId === removedId) s.drawingId = null; }); pages.value[pIdx].drawings.splice(idx, 1); } };
+        
+        const addDrawing = (pIdx) => {
+            const targetIdx = (typeof pIdx === 'number') ? pIdx : activePageIndex.value;
+            const newDrawing = {
+                id: Date.now() + Math.random(),
+                imgSrc: null,
+                layout: { x: 50, y: 50, w: 300, h: 200, z: 1 },
+                inner: { scale: 1, x: 0, y: 0 },
+                history: [],
+                historyStep: -1
+            };
+            pages.value[targetIdx].drawings.push(newDrawing);
+            nextTick(() => saveHistory(newDrawing));
+        };
+        
+        const removeDrawing = (pIdx, idx) => {
+            if (confirm('削除しますか？')) {
+                const removedId = pages.value[pIdx].drawings[idx].id;
+                if (pages.value[pIdx].drawings[idx].imgSrc) {
+                    URL.revokeObjectURL(pages.value[pIdx].drawings[idx].imgSrc);
+                }
+                pages.value[pIdx].scripts.forEach(s => {
+                    if (s.drawingId === removedId) s.drawingId = null;
+                });
+                pages.value[pIdx].drawings.splice(idx, 1);
+            }
+        };
 
         // --- プロット操作（移動・挿入） ---
         const moveScript = (pIndex, sIndex, dir) => {
@@ -523,8 +568,36 @@ createApp({
             }, 100);
         };
 
+        // プロットからコンテへジャンプ
+        const jumpToConte = async (pIndex, script) => {
+            await changeMode('conte');
+            activePageIndex.value = pIndex;
+
+            if (script.drawingId) {
+                setTimeout(() => {
+                    const el = document.getElementById('conte-drawing-' + script.drawingId);
+                    if (el) el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                }, 100);
+            }
+        };
+
+        // プロットからネームへジャンプ
+        const jumpToName = async (pIndex, script) => {
+            await changeMode('name');
+            setTimeout(() => {
+                const el = document.getElementById('name-script-' + script.id);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    selectItem(script.id);
+                }
+            }, 100);
+        };
+
         // --- ドラッグ＆ドロップ（プロット） ---
-        const dragStart = (pIndex, idx) => { draggingItem.value = { pIndex, idx }; };
+        const dragStart = (pIndex, idx) => {
+            draggingItem.value = { pIndex, idx };
+        };
+        
         const dragOverScript = (pIndex, idx) => {
             if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) {
                 if (dropTarget.value !== null) dropTarget.value = null;
@@ -534,10 +607,18 @@ createApp({
                 dropTarget.value = { pIndex, idx };
             }
         };
-        const dragOverPage = (pIndex) => { if (dropTarget.value && dropTarget.value.pIndex === pIndex && dropTarget.value.idx !== null) return; dropTarget.value = { pIndex, idx: null }; };
+        
+        const dragOverPage = (pIndex) => {
+            if (dropTarget.value && dropTarget.value.pIndex === pIndex && dropTarget.value.idx !== null) return;
+            dropTarget.value = { pIndex, idx: null };
+        };
+        
         const dropOnScript = (pIndex, idx) => executeScriptMove(pIndex, idx);
         const dropOnPage = (pIndex) => executeScriptMove(pIndex, null);
-        const dragEnd = () => { draggingItem.value = null; dropTarget.value = null; };
+        const dragEnd = () => {
+            draggingItem.value = null;
+            dropTarget.value = null;
+        };
 
         // FIX: プロット移動ロジックの簡略化
         const executeScriptMove = (targetPIndex, targetIdx) => {
@@ -567,9 +648,23 @@ createApp({
         const isDragging = (pIndex, idx) => draggingItem.value && draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx;
 
         // --- ドラッグ＆ドロップ（コンテのコマ） ---
-        const dragStartDrawing = (e, idx) => { if (!isDrawingDragReady.value) { e.preventDefault(); return; } draggingDrawingIndex.value = idx; };
-        const dragEndDrawing = () => { draggingDrawingIndex.value = null; dropTargetDrawingIndex.value = null; isDrawingDragReady.value = false; };
-        const dragOverDrawing = (idx) => { if (draggingDrawingIndex.value === null) return; if (draggingDrawingIndex.value === idx) return; if (dropTargetDrawingIndex.value !== idx) dropTargetDrawingIndex.value = idx; };
+        const dragStartDrawing = (e, idx) => {
+            if (!isDrawingDragReady.value) {
+                e.preventDefault();
+                return;
+            }
+            draggingDrawingIndex.value = idx;
+        };
+        const dragEndDrawing = () => {
+            draggingDrawingIndex.value = null;
+            dropTargetDrawingIndex.value = null;
+            isDrawingDragReady.value = false;
+        };
+        const dragOverDrawing = (idx) => {
+            if (draggingDrawingIndex.value === null) return;
+            if (draggingDrawingIndex.value === idx) return;
+            if (dropTargetDrawingIndex.value !== idx) dropTargetDrawingIndex.value = idx;
+        };
 
         // コマ移動ロジック（async/await対応）
         const dropOnDrawing = async (targetIdx) => {
@@ -966,8 +1061,29 @@ createApp({
             document.removeEventListener('mouseup', stopInteract);
             document.removeEventListener('touchend', stopInteract); // 追加
         };
-        const moveItemPage = (pageIdx, type, itemIdx, dir) => { const targetPageIdx = pageIdx + dir; if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) { const item = pages.value[pageIdx][type].splice(itemIdx, 1)[0]; pages.value[targetPageIdx][type].push(item); } };
-        const moveDrawingPage = async (pageIdx, drawingIdx, dir) => { const targetPageIdx = pageIdx + dir; if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) { await saveAllCanvases(); const drawing = pages.value[pageIdx].drawings.splice(drawingIdx, 1)[0]; if (dir === -1) pages.value[targetPageIdx].drawings.push(drawing); else pages.value[targetPageIdx].drawings.unshift(drawing); const relatedScripts = pages.value[pageIdx].scripts.filter(s => s.drawingId === drawing.id); for (let i = pages.value[pageIdx].scripts.length - 1; i >= 0; i--) { if (pages.value[pageIdx].scripts[i].drawingId === drawing.id) { pages.value[pageIdx].scripts.splice(i, 1); } } pages.value[targetPageIdx].scripts.push(...relatedScripts); } };
+        
+        const moveItemPage = (pageIdx, type, itemIdx, dir) => {
+            const targetPageIdx = pageIdx + dir;
+            if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
+                const item = pages.value[pageIdx][type].splice(itemIdx, 1)[0];
+                pages.value[targetPageIdx][type].push(item);
+            }
+        };
+        
+        const moveDrawingPage = async (pageIdx, drawingIdx, dir) => {
+            const targetPageIdx = pageIdx + dir;
+            if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
+                await saveAllCanvases();
+                const drawing = pages.value[pageIdx].drawings.splice(drawingIdx, 1)[0];
+                if (dir === -1) pages.value[targetPageIdx].drawings.push(drawing);
+                else pages.value[targetPageIdx].drawings.unshift(drawing);
+                const relatedScripts = pages.value[pageIdx].scripts.filter(s => s.drawingId === drawing.id);
+                for (let i = pages.value[pageIdx].scripts.length - 1; i >= 0; i--) {
+                    if (pages.value[pageIdx].scripts[i].drawingId === drawing.id) { pages.value[pageIdx].scripts.splice(i, 1); }
+                }
+                pages.value[targetPageIdx].scripts.push(...relatedScripts);
+            }
+        };
 
         // 指定したインデックス以降の全セリフを新しいページに移動する
         const moveSubsequentScriptsToNewPage = async (pIndex, sIndex) => {
@@ -1169,87 +1285,265 @@ createApp({
         };
 
         const exportData = async (format = 'png') => {
-            if (currentMode.value !== 'name') { alert('ネームモードに切り替えてから実行します'); currentMode.value = 'name'; await nextTick(); }
-            const useDirectory = 'showDirectoryPicker' in window; let dirHandle = null; if (useDirectory) { try { dirHandle = await window.showDirectoryPicker(); } catch (e) { return; } }
-            isExporting.value = true; isProcessing.value = true;
-            if (format === 'psd') { isTextLayerMode.value = true; isHideGuideMode.value = true; isHideDrawingMode.value = true; isTransparentMode.value = true; }
-            else { isTextLayerMode.value = false; isHideGuideMode.value = true; isHideDrawingMode.value = false; isTransparentMode.value = false; }
+            if (currentMode.value !== 'name') {
+                alert('ネームモードに切り替えてから実行します');
+                currentMode.value = 'name';
+                await nextTick();
+            }
+            
+            const useDirectory = 'showDirectoryPicker' in window;
+            let dirHandle = null;
+            if (useDirectory) {
+                try {
+                    dirHandle = await window.showDirectoryPicker();
+                } catch (e) {
+                    return;
+                }
+            }
+            
+            isExporting.value = true;
+            isProcessing.value = true;
+            
+            if (format === 'psd') {
+                isTextLayerMode.value = true;
+                isHideGuideMode.value = true;
+                isHideDrawingMode.value = true;
+                isTransparentMode.value = true;
+            } else {
+                isTextLayerMode.value = false;
+                isHideGuideMode.value = true;
+                isHideDrawingMode.value = false;
+                isTransparentMode.value = false;
+            }
 
-            selectedItemId.value = null; isImageEditMode.value = false;
-            await nextTick(); await new Promise(r => setTimeout(r, 1000));
+            selectedItemId.value = null;
+            isImageEditMode.value = false;
+            await nextTick();
+            await new Promise(r => setTimeout(r, 1000));
 
             const pageElements = document.querySelectorAll('.manga-page');
             const zip = useDirectory ? null : new JSZip();
 
             for (let i = 0; i < pageElements.length; i++) {
-                const el = pageElements[i]; if (el.classList.contains('opacity-0')) continue;
+                const el = pageElements[i];
+                if (el.classList.contains('opacity-0')) continue;
+                
                 try {
-                    const canvasW = pageConfig.value.canvasW; const canvasH = pageConfig.value.canvasH;
-                    const scale = pageConfig.value.scale; const domW = el.clientWidth; const ratio = canvasW / domW;
+                    const canvasW = pageConfig.value.canvasW;
+                    const canvasH = pageConfig.value.canvasH;
+                    const scale = pageConfig.value.scale;
+                    const domW = el.clientWidth;
+                    const ratio = canvasW / domW;
                     const pageNum = el.id.replace('render-page-', '');
 
                     if (format === 'png') {
-                        const dataUrl = await htmlToImage.toPng(el, { width: canvasW, height: canvasH, style: { transform: `scale(${ratio})`, transformOrigin: 'top left', width: `${domW}px`, height: `${el.clientHeight}px`, margin: 0 }, filter: (node) => (node.id !== 'font-awesome') });
+                        const dataUrl = await htmlToImage.toPng(el, {
+                            width: canvasW,
+                            height: canvasH,
+                            style: {
+                                transform: `scale(${ratio})`,
+                                transformOrigin: 'top left',
+                                width: `${domW}px`,
+                                height: `${el.clientHeight}px`,
+                                margin: 0
+                            },
+                            filter: (node) => (node.id !== 'font-awesome')
+                        });
                         const blob = await (await fetch(dataUrl)).blob();
                         const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.png`;
-                        if (useDirectory && dirHandle) { const fileHandle = await dirHandle.getFileHandle(fileName, { create: true }); const writable = await fileHandle.createWritable(); await writable.write(blob); await writable.close(); } else if (zip) { zip.file(fileName, blob); }
+                        
+                        if (useDirectory && dirHandle) {
+                            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                            const writable = await fileHandle.createWritable();
+                            await writable.write(blob);
+                            await writable.close();
+                        } else if (zip) {
+                            zip.file(fileName, blob);
+                        }
                     } else if (format === 'psd') {
-                        const textDataUrl = await htmlToImage.toPng(el, { width: canvasW, height: canvasH, style: { transform: `scale(${ratio})`, transformOrigin: 'top left', width: `${domW}px`, height: `${el.clientHeight}px`, margin: 0, backgroundColor: 'rgba(0,0,0,0)' }, filter: (node) => (node.id !== 'font-awesome') });
-                        const textImg = new Image(); textImg.src = textDataUrl; await new Promise(r => textImg.onload = r);
-                        const textCanvas = document.createElement('canvas'); textCanvas.width = canvasW; textCanvas.height = canvasH;
+                        const textDataUrl = await htmlToImage.toPng(el, {
+                            width: canvasW,
+                            height: canvasH,
+                            style: {
+                                transform: `scale(${ratio})`,
+                                transformOrigin: 'top left',
+                                width: `${domW}px`,
+                                height: `${el.clientHeight}px`,
+                                margin: 0,
+                                backgroundColor: 'rgba(0,0,0,0)'
+                            },
+                            filter: (node) => (node.id !== 'font-awesome')
+                        });
+                        
+                        const textImg = new Image();
+                        textImg.src = textDataUrl;
+                        await new Promise(r => textImg.onload = r);
+                        
+                        const textCanvas = document.createElement('canvas');
+                        textCanvas.width = canvasW;
+                        textCanvas.height = canvasH;
                         textCanvas.getContext('2d').drawImage(textImg, 0, 0);
 
-                        const drawCanvas = document.createElement('canvas'); drawCanvas.width = canvasW; drawCanvas.height = canvasH;
+                        const drawCanvas = document.createElement('canvas');
+                        drawCanvas.width = canvasW;
+                        drawCanvas.height = canvasH;
                         const dCtx = drawCanvas.getContext('2d');
-                        const pageIndex = parseInt(pageNum); const pageData = pages.value[pageIndex];
+                        const pageIndex = parseInt(pageNum);
+                        const pageData = pages.value[pageIndex];
+                        
                         if (pageData) {
                             for (const d of pageData.drawings) {
                                 if (d.imgSrc) {
-                                    const img = new Image(); img.src = d.imgSrc; await new Promise(r => img.onload = r);
-                                    const x = d.layout.x / scale; const y = d.layout.y / scale; const w = d.layout.w / scale; const h = d.layout.h / scale;
-                                    dCtx.save(); dCtx.beginPath(); dCtx.rect(x, y, w, h); dCtx.clip();
-                                    const ix = (d.inner?.x || 0) / scale; const iy = (d.inner?.y || 0) / scale; const is = d.inner?.scale || 1;
-                                    const imgCenterX = x + w / 2 + ix; const imgCenterY = y + h / 2 + iy;
+                                    const img = new Image();
+                                    img.src = d.imgSrc;
+                                    await new Promise(r => img.onload = r);
+                                    
+                                    const x = d.layout.x / scale;
+                                    const y = d.layout.y / scale;
+                                    const w = d.layout.w / scale;
+                                    const h = d.layout.h / scale;
+                                    
+                                    dCtx.save();
+                                    dCtx.beginPath();
+                                    dCtx.rect(x, y, w, h);
+                                    dCtx.clip();
+                                    
+                                    const ix = (d.inner?.x || 0) / scale;
+                                    const iy = (d.inner?.y || 0) / scale;
+                                    const is = d.inner?.scale || 1;
+                                    
+                                    const imgCenterX = x + w / 2 + ix;
+                                    const imgCenterY = y + h / 2 + iy;
                                     const ratioImg = Math.min(w / img.width, h / img.height) * is;
-                                    const dw = img.width * ratioImg; const dh = img.height * ratioImg;
-                                    const dx = imgCenterX - dw / 2; const dy = imgCenterY - dh / 2;
+                                    const dw = img.width * ratioImg;
+                                    const dh = img.height * ratioImg;
+                                    const dx = imgCenterX - dw / 2;
+                                    const dy = imgCenterY - dh / 2;
+                                    
                                     dCtx.drawImage(img, dx, dy, dw, dh);
                                     dCtx.restore();
-                                    dCtx.strokeStyle = "black"; dCtx.lineWidth = 2 / scale; dCtx.strokeRect(x, y, w, h);
+                                    
+                                    dCtx.strokeStyle = "black";
+                                    dCtx.lineWidth = 2 / scale;
+                                    dCtx.strokeRect(x, y, w, h);
                                 }
                             }
                         }
 
-                        const guideCanvas = document.createElement('canvas'); guideCanvas.width = canvasW; guideCanvas.height = canvasH;
+                        const guideCanvas = document.createElement('canvas');
+                        guideCanvas.width = canvasW;
+                        guideCanvas.height = canvasH;
                         const gCtx = guideCanvas.getContext('2d');
+                        
                         const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = pageConfig.value;
-                        const fx = (canvasW - finishW) / 2; const fy = (canvasH - finishH) / 2;
-                        gCtx.strokeStyle = "rgba(136, 146, 230, 0.8)"; gCtx.lineWidth = 1;
+                        const fx = (canvasW - finishW) / 2;
+                        const fy = (canvasH - finishH) / 2;
+                        
+                        gCtx.strokeStyle = "rgba(136, 146, 230, 0.8)";
+                        gCtx.lineWidth = 1;
                         gCtx.strokeRect(fx, fy, finishW, finishH);
-                        const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0); const si = isRight ? safeInside : safeOutside; const so = isRight ? safeOutside : safeInside;
+                        
+                        const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
+                        const si = isRight ? safeInside : safeOutside;
+                        const so = isRight ? safeOutside : safeInside;
                         gCtx.strokeRect(fx + si, fy + safeTop, finishW - si - so, finishH - safeTop - safeBottom);
-                        const bx = fx - bleed; const by = fy - bleed; const bw = finishW + bleed * 2; const bh = finishH + bleed * 2;
+                        
+                        const bx = fx - bleed;
+                        const by = fy - bleed;
+                        const bw = finishW + bleed * 2;
+                        const bh = finishH + bleed * 2;
                         gCtx.strokeRect(bx, by, bw, bh);
 
-                        gCtx.beginPath(); const tExt = 200; const bxr = bx + bw; const byb = by + bh; const fxr = fx + finishW; const fyb = fy + finishH; const cx = canvasW / 2; const cy = canvasH / 2; const cLen = 200;
-                        gCtx.moveTo(cx, by); gCtx.lineTo(cx, by - tExt); gCtx.moveTo(cx - cLen, by - tExt / 2); gCtx.lineTo(cx + cLen, by - tExt / 2);
-                        gCtx.moveTo(cx, byb); gCtx.lineTo(cx, byb + tExt); gCtx.moveTo(cx - cLen, byb + tExt / 2); gCtx.lineTo(cx + cLen, byb + tExt / 2);
-                        gCtx.moveTo(bx, cy); gCtx.lineTo(bx - tExt, cy); gCtx.moveTo(bx - tExt / 2, cy - cLen); gCtx.lineTo(bx - tExt / 2, cy + cLen);
-                        gCtx.moveTo(bxr, cy); gCtx.lineTo(bxr + tExt, cy); gCtx.moveTo(bxr + tExt / 2, cy - cLen); gCtx.lineTo(bxr + tExt / 2, cy + cLen);
-                        gCtx.moveTo(fx, by); gCtx.lineTo(fx, by - tExt); gCtx.moveTo(bx, by); gCtx.lineTo(bx, by - tExt); gCtx.moveTo(bx, fy); gCtx.lineTo(bx - tExt, fy); gCtx.moveTo(bx, by); gCtx.lineTo(bx - tExt, by);
-                        gCtx.moveTo(fxr, by); gCtx.lineTo(fxr, by - tExt); gCtx.moveTo(bxr, by); gCtx.lineTo(bxr, by - tExt); gCtx.moveTo(bxr, fy); gCtx.lineTo(bxr + tExt, fy); gCtx.moveTo(bxr, by); gCtx.lineTo(bxr + tExt, by);
-                        gCtx.moveTo(fx, byb); gCtx.lineTo(fx, byb + tExt); gCtx.moveTo(bx, byb); gCtx.lineTo(bx, byb + tExt); gCtx.moveTo(bx, fyb); gCtx.lineTo(bx - tExt, fyb); gCtx.moveTo(bx, byb); gCtx.lineTo(bx - tExt, byb);
-                        gCtx.moveTo(fxr, byb); gCtx.lineTo(fxr, byb + tExt); gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr, byb + tExt); gCtx.moveTo(bxr, fyb); gCtx.lineTo(bxr + tExt, fyb); gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr + tExt, byb);
+                        gCtx.beginPath();
+                        const tExt = 200;
+                        const bxr = bx + bw;
+                        const byb = by + bh;
+                        const fxr = fx + finishW;
+                        const fyb = fy + finishH;
+                        const cx = canvasW / 2;
+                        const cy = canvasH / 2;
+                        const cLen = 200;
+                        
+                        // Center marks
+                        gCtx.moveTo(cx, by); gCtx.lineTo(cx, by - tExt);
+                        gCtx.moveTo(cx - cLen, by - tExt / 2); gCtx.lineTo(cx + cLen, by - tExt / 2);
+                        gCtx.moveTo(cx, byb); gCtx.lineTo(cx, byb + tExt);
+                        gCtx.moveTo(cx - cLen, byb + tExt / 2); gCtx.lineTo(cx + cLen, byb + tExt / 2);
+                        gCtx.moveTo(bx, cy); gCtx.lineTo(bx - tExt, cy);
+                        gCtx.moveTo(bx - tExt / 2, cy - cLen); gCtx.lineTo(bx - tExt / 2, cy + cLen);
+                        gCtx.moveTo(bxr, cy); gCtx.lineTo(bxr + tExt, cy);
+                        gCtx.moveTo(bxr + tExt / 2, cy - cLen); gCtx.lineTo(bxr + tExt / 2, cy + cLen);
+                        
+                        // Corner marks (Tonbo)
+                        gCtx.moveTo(fx, by); gCtx.lineTo(fx, by - tExt);
+                        gCtx.moveTo(bx, by); gCtx.lineTo(bx, by - tExt);
+                        gCtx.moveTo(bx, fy); gCtx.lineTo(bx - tExt, fy);
+                        gCtx.moveTo(bx, by); gCtx.lineTo(bx - tExt, by);
+                        
+                        gCtx.moveTo(fxr, by); gCtx.lineTo(fxr, by - tExt);
+                        gCtx.moveTo(bxr, by); gCtx.lineTo(bxr, by - tExt);
+                        gCtx.moveTo(bxr, fy); gCtx.lineTo(bxr + tExt, fy);
+                        gCtx.moveTo(bxr, by); gCtx.lineTo(bxr + tExt, by);
+                        
+                        gCtx.moveTo(fx, byb); gCtx.lineTo(fx, byb + tExt);
+                        gCtx.moveTo(bx, byb); gCtx.lineTo(bx, byb + tExt);
+                        gCtx.moveTo(bx, fyb); gCtx.lineTo(bx - tExt, fyb);
+                        gCtx.moveTo(bx, byb); gCtx.lineTo(bx - tExt, byb);
+                        
+                        gCtx.moveTo(fxr, byb); gCtx.lineTo(fxr, byb + tExt);
+                        gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr, byb + tExt);
+                        gCtx.moveTo(bxr, fyb); gCtx.lineTo(bxr + tExt, fyb);
+                        gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr + tExt, byb);
+                        
                         gCtx.stroke();
-                        const bgCanvas = document.createElement('canvas'); bgCanvas.width = canvasW; bgCanvas.height = canvasH; bgCanvas.getContext('2d').fillStyle = "white"; bgCanvas.getContext('2d').fillRect(0, 0, canvasW, canvasH);
-                        const psd = { width: canvasW, height: canvasH, children: [{ name: 'Paper', canvas: bgCanvas }, { name: 'Guide', canvas: guideCanvas }, { name: 'Drawings', canvas: drawCanvas }, { name: 'Text', canvas: textCanvas }] };
-                        const buffer = agPsd.writePsd(psd); const blob = new Blob([buffer]); const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.psd`;
-                        if (useDirectory && dirHandle) { const fileHandle = await dirHandle.getFileHandle(fileName, { create: true }); const writable = await fileHandle.createWritable(); await writable.write(blob); await writable.close(); } else if (zip) { zip.file(fileName, blob); }
+                        
+                        const bgCanvas = document.createElement('canvas');
+                        bgCanvas.width = canvasW;
+                        bgCanvas.height = canvasH;
+                        bgCanvas.getContext('2d').fillStyle = "white";
+                        bgCanvas.getContext('2d').fillRect(0, 0, canvasW, canvasH);
+                        
+                        const psd = {
+                            width: canvasW,
+                            height: canvasH,
+                            children: [
+                                { name: 'Paper', canvas: bgCanvas },
+                                { name: 'Guide', canvas: guideCanvas },
+                                { name: 'Drawings', canvas: drawCanvas },
+                                { name: 'Text', canvas: textCanvas }
+                            ]
+                        };
+                        
+                        const buffer = agPsd.writePsd(psd);
+                        const blob = new Blob([buffer]);
+                        const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.psd`;
+                        
+                        if (useDirectory && dirHandle) {
+                            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                            const writable = await fileHandle.createWritable();
+                            await writable.write(blob);
+                            await writable.close();
+                        } else if (zip) {
+                            zip.file(fileName, blob);
+                        }
                     }
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error(e);
+                }
             }
-            isTextLayerMode.value = false; isHideGuideMode.value = false; isHideDrawingMode.value = false; isTransparentMode.value = false; isExporting.value = false; isProcessing.value = false;
-            if (zip) { zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip")); } else { alert("保存完了"); }
+            
+            isTextLayerMode.value = false;
+            isHideGuideMode.value = false;
+            isHideDrawingMode.value = false;
+            isTransparentMode.value = false;
+            isExporting.value = false;
+            isProcessing.value = false;
+            
+            if (zip) {
+                zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip"));
+            } else {
+                alert("保存完了");
+            }
         };
 
         // 全ページ・全セリフを走査して、既に入力されている名前を重複なしでリスト化します
@@ -1439,11 +1733,12 @@ createApp({
             undo, redo, canUndo, canRedo,
             pageStyle, guideProps, isProcessing, isTextLayerMode, isHideGuideMode, isHideDrawingMode, isTransparentMode,
             drawingCountWarning, adjustHeight, focusNext, focusText, focusPrev, setInputRef, uniqueCharacters, fontOptions, fileInput, handleFileChange,
-            isMenuOpen, handleScriptTextKeydown, handleScriptTextKeydown,
+            isMenuOpen, handleScriptTextKeydown,
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
-            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer
+            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer,
+            jumpToConte, jumpToName
         };
     }
 }).mount('#app');
