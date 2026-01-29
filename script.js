@@ -1657,7 +1657,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder,
-            jumpToConte, jumpToName,
+            jumpToConte, jumpToName, exportProgress, exportStatusText,
         };
     }
 }).mount('#app');
