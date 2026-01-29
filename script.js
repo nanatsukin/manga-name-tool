@@ -269,7 +269,7 @@ createApp({
                 alert('コピー失敗: ' + e);
             }
         };
-
+        
         // タッチ・マウス両対応の座標取得関数
         const getClientPos = (e) => {
             if (e.touches && e.touches.length > 0) {
@@ -281,7 +281,7 @@ createApp({
         // ガイド描画用の座標計算
         const guideProps = (pageIndex) => {
             const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = pageConfig.value;
-
+            
             const fx = (canvasW - finishW) / 2;
             const fy = (canvasH - finishH) / 2;
             const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
@@ -292,17 +292,17 @@ createApp({
             const safeY = (fy + safeTop) * scale;
             const safeW = (finishW - si - so) * scale;
             const safeH = (finishH - safeTop - safeBottom) * scale;
-
+            
             const finishX = fx * scale;
             const finishY = fy * scale;
             const finishW_s = finishW * scale;
             const finishH_s = finishH * scale;
-
+            
             const bleedX = (fx - bleed) * scale;
             const bleedY = (fy - bleed) * scale;
             const bleedW = (finishW + bleed * 2) * scale;
             const bleedH = (finishH + bleed * 2) * scale;
-
+            
             const cx = (canvasW / 2) * scale;
             const cy = (canvasH / 2) * scale;
 
@@ -466,11 +466,11 @@ createApp({
             if (mode === 'plot') {
                 nextTick(() => resizeTextareas());
             }
-
+           
             else if (mode === 'name') {
                 nextTick(() => {
                     if (nameModeContainer.value) {
-                        // 新しいモードがネームモードなら、スクロール位置を復元
+                         // 新しいモードがネームモードなら、スクロール位置を復元
                         nameModeContainer.value.scrollTop = nameModeScrollTop;
                     }
                 });
@@ -540,7 +540,7 @@ createApp({
             return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
         };
         const getScriptsForDrawing = (pIdx, drawingId) => pages.value[pIdx].scripts.filter(s => s.drawingId === drawingId);
-
+        
         const addDrawing = (pIdx) => {
             const targetIdx = (typeof pIdx === 'number') ? pIdx : activePageIndex.value;
             const newDrawing = {
@@ -554,7 +554,7 @@ createApp({
             pages.value[targetIdx].drawings.push(newDrawing);
             nextTick(() => saveHistory(newDrawing));
         };
-
+        
         const removeDrawing = (pIdx, idx) => {
             if (confirm('削除しますか？')) {
                 const removedId = pages.value[pIdx].drawings[idx].id;
@@ -646,7 +646,7 @@ createApp({
         const dragStart = (pIndex, idx) => {
             draggingItem.value = { pIndex, idx };
         };
-
+        
         const dragOverScript = (pIndex, idx) => {
             if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) {
                 if (dropTarget.value !== null) dropTarget.value = null;
@@ -656,12 +656,12 @@ createApp({
                 dropTarget.value = { pIndex, idx };
             }
         };
-
+        
         const dragOverPage = (pIndex) => {
             if (dropTarget.value && dropTarget.value.pIndex === pIndex && dropTarget.value.idx !== null) return;
             dropTarget.value = { pIndex, idx: null };
         };
-
+        
         const dropOnScript = (pIndex, idx) => executeScriptMove(pIndex, idx);
         const dropOnPage = (pIndex) => executeScriptMove(pIndex, null);
         const dragEnd = () => {
@@ -1110,7 +1110,7 @@ createApp({
             document.removeEventListener('mouseup', stopInteract);
             document.removeEventListener('touchend', stopInteract); // 追加
         };
-
+        
         const moveItemPage = (pageIdx, type, itemIdx, dir) => {
             const targetPageIdx = pageIdx + dir;
             if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
@@ -1118,7 +1118,7 @@ createApp({
                 pages.value[targetPageIdx][type].push(item);
             }
         };
-
+        
         const moveDrawingPage = async (pageIdx, drawingIdx, dir) => {
             const targetPageIdx = pageIdx + dir;
             if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
@@ -1172,23 +1172,19 @@ createApp({
                 pages: JSON.parse(JSON.stringify(pages.value)),
                 config: pageConfig.value
             };
-
+            // 画像データをBase64化
             for (const page of exportData.pages) {
                 for (const drawing of page.drawings) {
                     delete drawing.history;
                     delete drawing.historyStep;
-
                     if (drawing.imgSrc) {
+                        // 実行中のデータから最新のBlobを取得してBase64化
                         const livePage = pages.value.find(p => p.id === page.id);
                         const liveDrawing = livePage.drawings.find(d => d.id === drawing.id);
-
                         if (liveDrawing && liveDrawing.imgSrc) {
                             try {
                                 const response = await fetch(liveDrawing.imgSrc);
                                 const blob = await response.blob();
-
-                                // 【改修ポイント】そのままBase64にせず、圧縮するロジックを挟む
-                                // ここでは簡易的に、品質を落としたデータURLを取得するなどの処理を検討してください。
                                 drawing.imgSrc = await blobToBase64(blob);
                             } catch (e) { console.error(e); }
                         }
@@ -1200,32 +1196,19 @@ createApp({
 
         // 保存処理（上書き）
         const saveProject = async () => {
-            // ファイルハンドルがない（スマホなど）場合はダウンロード保存へ
-            if (!currentFileHandle.value && !('showSaveFilePicker' in window)) {
+            // スマホやファイルハンドルがない場合は「別名保存」へ流す
+            if (!currentFileHandle.value) {
                 saveProjectAs();
                 return;
             }
-
             try {
                 isProcessing.value = true;
-
-                // 1. 最新のキャンバス状態をBlobとして取得
-                if (currentMode.value === 'conte') await saveAllCanvases();
-
-                // 2. 巨大なBase64文字列を作らず、構造データのみを抽出
-                const projectData = {
-                    pages: JSON.parse(JSON.stringify(pages.value)),
-                    config: JSON.parse(JSON.stringify(pageConfig.value))
-                };
-
-                // 3. 画像はBlobのまま扱う（文字列化しない）
-                // JSON.stringifyしたテキストと、バイナリデータを分けて保存するか、
-                // そもそもIndexedDBに丸ごと保存するのが最も安全です。
-
-                // とりあえずの回避策として、自動保存(autoSaveToIDB)と同じ仕組みを流用します
-                await autoSaveToIDB();
-
-                alert("ブラウザ内ストレージに保存しました。");
+                const jsonString = await createExportData();
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const writable = await currentFileHandle.value.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                alert("上書き保存しました");
             } catch (e) {
                 console.error(e);
                 alert("保存に失敗しました");
@@ -1368,10 +1351,10 @@ createApp({
                 currentMode.value = 'name';
                 await nextTick();
             }
-
+            
             // 設定取得（引数がオブジェクトでない場合はデフォルト設定を使用）
             const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
-
+            
             // 出力対象ページのインデックスリストを作成
             let targetPageIndices = [];
             if (settings.rangeType === 'current') {
@@ -1400,10 +1383,10 @@ createApp({
                     return;
                 }
             }
-
+            
             isExporting.value = true;
             isProcessing.value = true;
-
+            
             if (format === 'psd') {
                 isTextLayerMode.value = true;
                 isHideGuideMode.value = true;
@@ -1429,7 +1412,7 @@ createApp({
                 const el = pageElements[i];
                 // 非表示のページ（見開き調整用など）はスキップ
                 if (el.classList.contains('opacity-0')) continue;
-
+                
                 try {
                     const canvasW = pageConfig.value.canvasW;
                     const canvasH = pageConfig.value.canvasH;
@@ -1455,7 +1438,7 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
-
+                        
                         if (format === 'pdf') {
                             // PDFへの追加
                             if (!pdfDoc) {
@@ -1497,11 +1480,11 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
-
+                        
                         const textImg = new Image();
                         textImg.src = textDataUrl;
                         await new Promise(r => textImg.onload = r);
-
+                        
                         const textCanvas = document.createElement('canvas');
                         textCanvas.width = canvasW;
                         textCanvas.height = canvasH;
@@ -1512,28 +1495,28 @@ createApp({
                         drawCanvas.height = canvasH;
                         const dCtx = drawCanvas.getContext('2d');
                         const pageData = pages.value[pageIndex];
-
+                        
                         if (pageData) {
                             for (const d of pageData.drawings) {
                                 if (d.imgSrc) {
                                     const img = new Image();
                                     img.src = d.imgSrc;
                                     await new Promise(r => img.onload = r);
-
+                                    
                                     const x = d.layout.x / scale;
                                     const y = d.layout.y / scale;
                                     const w = d.layout.w / scale;
                                     const h = d.layout.h / scale;
-
+                                    
                                     dCtx.save();
                                     dCtx.beginPath();
                                     dCtx.rect(x, y, w, h);
                                     dCtx.clip();
-
+                                    
                                     const ix = (d.inner?.x || 0) / scale;
                                     const iy = (d.inner?.y || 0) / scale;
                                     const is = d.inner?.scale || 1;
-
+                                    
                                     const imgCenterX = x + w / 2 + ix;
                                     const imgCenterY = y + h / 2 + iy;
                                     const ratioImg = Math.min(w / img.width, h / img.height) * is;
@@ -1541,10 +1524,10 @@ createApp({
                                     const dh = img.height * ratioImg;
                                     const dx = imgCenterX - dw / 2;
                                     const dy = imgCenterY - dh / 2;
-
+                                    
                                     dCtx.drawImage(img, dx, dy, dw, dh);
                                     dCtx.restore();
-
+                                    
                                     dCtx.strokeStyle = "black";
                                     dCtx.lineWidth = 2 / scale;
                                     dCtx.strokeRect(x, y, w, h);
@@ -1556,20 +1539,20 @@ createApp({
                         guideCanvas.width = canvasW;
                         guideCanvas.height = canvasH;
                         const gCtx = guideCanvas.getContext('2d');
-
+                        
                         const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = pageConfig.value;
                         const fx = (canvasW - finishW) / 2;
                         const fy = (canvasH - finishH) / 2;
-
+                        
                         gCtx.strokeStyle = "rgba(136, 146, 230, 0.8)";
                         gCtx.lineWidth = 1;
                         gCtx.strokeRect(fx, fy, finishW, finishH);
-
+                        
                         const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
                         const si = isRight ? safeInside : safeOutside;
                         const so = isRight ? safeOutside : safeInside;
                         gCtx.strokeRect(fx + si, fy + safeTop, finishW - si - so, finishH - safeTop - safeBottom);
-
+                        
                         const bx = fx - bleed;
                         const by = fy - bleed;
                         const bw = finishW + bleed * 2;
@@ -1585,7 +1568,7 @@ createApp({
                         const cx = canvasW / 2;
                         const cy = canvasH / 2;
                         const cLen = 200;
-
+                        
                         // Center marks
                         gCtx.moveTo(cx, by); gCtx.lineTo(cx, by - tExt);
                         gCtx.moveTo(cx - cLen, by - tExt / 2); gCtx.lineTo(cx + cLen, by - tExt / 2);
@@ -1595,36 +1578,36 @@ createApp({
                         gCtx.moveTo(bx - tExt / 2, cy - cLen); gCtx.lineTo(bx - tExt / 2, cy + cLen);
                         gCtx.moveTo(bxr, cy); gCtx.lineTo(bxr + tExt, cy);
                         gCtx.moveTo(bxr + tExt / 2, cy - cLen); gCtx.lineTo(bxr + tExt / 2, cy + cLen);
-
+                        
                         // Corner marks (Tonbo)
                         gCtx.moveTo(fx, by); gCtx.lineTo(fx, by - tExt);
                         gCtx.moveTo(bx, by); gCtx.lineTo(bx, by - tExt);
                         gCtx.moveTo(bx, fy); gCtx.lineTo(bx - tExt, fy);
                         gCtx.moveTo(bx, by); gCtx.lineTo(bx - tExt, by);
-
+                        
                         gCtx.moveTo(fxr, by); gCtx.lineTo(fxr, by - tExt);
                         gCtx.moveTo(bxr, by); gCtx.lineTo(bxr, by - tExt);
                         gCtx.moveTo(bxr, fy); gCtx.lineTo(bxr + tExt, fy);
                         gCtx.moveTo(bxr, by); gCtx.lineTo(bxr + tExt, by);
-
+                        
                         gCtx.moveTo(fx, byb); gCtx.lineTo(fx, byb + tExt);
                         gCtx.moveTo(bx, byb); gCtx.lineTo(bx, byb + tExt);
                         gCtx.moveTo(bx, fyb); gCtx.lineTo(bx - tExt, fyb);
                         gCtx.moveTo(bx, byb); gCtx.lineTo(bx - tExt, byb);
-
+                        
                         gCtx.moveTo(fxr, byb); gCtx.lineTo(fxr, byb + tExt);
                         gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr, byb + tExt);
                         gCtx.moveTo(bxr, fyb); gCtx.lineTo(bxr + tExt, fyb);
                         gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr + tExt, byb);
-
+                        
                         gCtx.stroke();
-
+                        
                         const bgCanvas = document.createElement('canvas');
                         bgCanvas.width = canvasW;
                         bgCanvas.height = canvasH;
                         bgCanvas.getContext('2d').fillStyle = "white";
                         bgCanvas.getContext('2d').fillRect(0, 0, canvasW, canvasH);
-
+                        
                         const psd = {
                             width: canvasW,
                             height: canvasH,
@@ -1635,11 +1618,11 @@ createApp({
                                 { name: 'Text', canvas: textCanvas }
                             ]
                         };
-
+                        
                         const buffer = agPsd.writePsd(psd);
                         const blob = new Blob([buffer]);
                         const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.psd`;
-
+                        
                         if (useDirectory && dirHandle) {
                             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
                             const writable = await fileHandle.createWritable();
@@ -1653,14 +1636,14 @@ createApp({
                     console.error(e);
                 }
             }
-
+            
             isTextLayerMode.value = false;
             isHideGuideMode.value = false;
             isHideDrawingMode.value = false;
             isTransparentMode.value = false;
             isExporting.value = false;
             isProcessing.value = false;
-
+            
             if (format === 'pdf' && pdfDoc) {
                 pdfDoc.save("manga_project.pdf");
             } else if (zip) {
@@ -1870,7 +1853,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder,
-            jumpToConte, jumpToName,
+            jumpToConte, jumpToName, 
         };
     }
 }).mount('#app');
