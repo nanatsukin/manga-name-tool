@@ -513,7 +513,7 @@ createApp({
             nextTick(() => resizeTextareas());
         };
 
-        const addScript = (pIdx) => { pages.value[pIdx].scripts.push({ id: Date.now() + Math.random(), char: '', text: '', drawingId: null, layout: { x: 300, y: 200, fontSize: 14 } }); nextTick(() => resizeTextareas()); };
+        const addScript = (pIdx) => { pages.value[pIdx].scripts.push({ id: Date.now() + Math.random(), type: 'dialogue', char: '', text: '', drawingId: null, layout: { x: 300, y: 200, fontSize: 14 } }); nextTick(() => resizeTextareas()); };
 
         // 削除処理
         const removeScript = (pIndex, idx) => {
@@ -532,6 +532,39 @@ createApp({
             // 削除後、テキストエリアの高さを再計算
             nextTick(() => resizeTextareas());
         };
+
+        // スクリプトの種別を切り替える（台詞 -> ト書き -> 注意書き -> 台詞...）
+        const toggleScriptType = (pIndex, idx) => {
+            const script = pages.value[pIndex].scripts[idx];
+            // 既存データ互換: typeがない場合はcharの有無で判定
+            if (!script.type) {
+                script.type = script.char ? 'dialogue' : 'direction';
+            }
+
+            if (script.type === 'dialogue') {
+                script.type = 'direction';
+                script.char = ''; // ト書きは名前なし
+            } else if (script.type === 'direction') {
+                script.type = 'note';
+                script.char = ''; // 注意書きも名前なし
+            } else {
+                script.type = 'dialogue';
+                // 名前が空ならデフォルトを入れるか、フォーカス時に補完など（ここでは空のまま）
+            }
+        };
+
+        // ネームモード用：現在のページに注意書きを追加
+        const addNoteToCurrentPage = () => {
+            const pIdx = activePageIndex.value;
+            const page = pages.value[pIdx];
+            // 画面中央付近に配置
+            const viewportCenterY = (nameModeContainer.value?.scrollTop || 0) + (window.innerHeight / 2) - 100;
+            // ページ内座標に変換（簡易的）
+            const y = Math.max(50, Math.min(pageConfig.value.canvasH * pageConfig.value.scale - 100, viewportCenterY));
+            
+            page.scripts.push({ id: Date.now(), type: 'note', char: '', text: '注意書き', drawingId: null, layout: { x: 100, y: y, fontSize: 16 } });
+        };
+
         const nextPage = async () => { if (activePageIndex.value < pages.value.length - 1) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value++; } };
         const prevPage = async () => { if (activePageIndex.value > 0) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value--; } };
         const selectItem = (id) => { selectedItemId.value = id; if (id === null) isImageEditMode.value = false; };
@@ -586,6 +619,7 @@ createApp({
             // 名前も内容も空の新しい行を作成
             const newScript = {
                 id: Date.now() + Math.random(),
+                type: 'dialogue',
                 char: '',
                 text: '',
                 drawingId: null,
@@ -1696,6 +1730,7 @@ createApp({
             // 新しい行を作成
             const newScript = {
                 id: Date.now() + Math.random(),
+                type: currentScript.type || (currentScript.char ? 'dialogue' : 'direction'),
                 char: currentScript.char, // 名前を引き継ぐ
                 text: secondPart,
                 drawingId: null,
@@ -1824,7 +1859,7 @@ createApp({
             splitScriptFromButton, moveSubsequentScriptsToNewPage,
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
-            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder,
+            openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
             jumpToConte, jumpToName, progress, progressMessage
         };
     }

@@ -550,6 +550,10 @@
                     <button @click="openExportModal" :disabled="isExporting"
                         class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition"><i class="fas"
                             :class="isExporting ? 'fa-spinner fa-spin' : 'fa-file-export'"></i> 書き出し</button>
+                    
+                    <button v-if="currentMode === 'name'" @click="addNoteToCurrentPage"
+                        class="bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded transition ml-2 shadow-sm border border-red-400">
+                        <i class="fas fa-sticky-note"></i> ＋注意書き</button>
                 </div>
 
                 <button @click="isMenuOpen = !isMenuOpen"
@@ -733,18 +737,19 @@
 
                                     <div
                                         class="w-24 md:w-28 flex-none border-r border-gray-700 flex items-center h-full">
-                                        <input v-model="script.char" list="char-name-suggestions" placeholder="名前"
+                                        <input v-if="script.type !== 'note'" v-model="script.char" list="char-name-suggestions" placeholder="名前"
                                             class="panel-input w-full text-xs font-bold text-blue-200 px-2 py-2 bg-transparent"
                                             :ref="el => setInputRef(el, pIndex, idx, 'char')"
                                             @keydown.enter.prevent="focusText(pIndex, idx)">
+                                        <div v-else class="w-full text-xs text-red-400 px-2 font-bold flex items-center h-full bg-red-900/10">注意書き</div>
                                     </div>
 
                                     <div class="w-14 md:w-12 flex-none flex items-center justify-center border-r border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors h-full"
-                                        @click="script.char = script.char ? '' : '-'"
-                                        :class="script.char ? 'bg-blue-900/20' : 'bg-green-900/20'">
+                                        @click="toggleScriptType(pIndex, idx)"
+                                        :class="script.type === 'note' ? 'bg-red-900/20' : (script.char ? 'bg-blue-900/20' : 'bg-green-900/20')">
                                         <span class="text-[10px] font-bold"
-                                            :class="script.char ? 'text-blue-300' : 'text-green-400'">
-                                            {{ script.char ? '台詞' : 'ト書き' }}
+                                            :class="script.type === 'note' ? 'text-red-400' : (script.char ? 'text-blue-300' : 'text-green-400')">
+                                            {{ script.type === 'note' ? '注意' : (script.char ? '台詞' : 'ト書き') }}
                                         </span>
                                     </div>
 
@@ -799,9 +804,10 @@
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0 relative flex items-center bg-transparent min-h-0">
+                                <div class="flex-1 min-w-0 relative flex flex-col justify-center bg-transparent min-h-0">
                                     <textarea v-model="script.text" rows="1" placeholder="内容..."
                                         class="panel-input w-full text-sm leading-relaxed py-3 px-4 focus:bg-gray-900/50 transition-colors resize-none overflow-hidden block"
+                                        :class="{'text-red-300': script.type === 'note'}"
                                         :ref="el => setInputRef(el, pIndex, idx, 'text')" @input="adjustHeight"
                                         @keydown="handleScriptTextKeydown($event, pIndex, idx)"></textarea>
                                 </div>
@@ -1075,7 +1081,14 @@
                                 @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script)"
                                 @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
 
-                                <div class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF', 
+                                <!-- 注意書きの場合（横書き・赤字） -->
+                                <div v-if="script.type === 'note'" class="font-sans select-none pointer-events-none border border-red-500 bg-white/80 text-red-600 px-2 py-1 rounded shadow-sm whitespace-pre-wrap"
+                                     :style="{ fontSize: script.layout.fontSize + 'px', minWidth: '100px' }">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>{{ script.text }}
+                                </div>
+
+                                <!-- 通常のセリフ・ト書き（縦書き） -->
+                                <div v-else class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF', 
                                          fontFamily: pageConfig.fontFamily }">
                                     {{ script.char ? script.text : `（${script.text}）` }}
                                 </div>
