@@ -266,7 +266,7 @@
         .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.85); /* 少し暗めにして集中させる */
+            background: rgba(0, 0, 0, 0.7);
             z-index: 9999;
             display: flex;
             flex-direction: column;
@@ -274,7 +274,6 @@
             justify-content: center;
             color: white;
             user-select: none;
-            backdrop-filter: blur(5px);
         }
 
         .save-status-indicator {
