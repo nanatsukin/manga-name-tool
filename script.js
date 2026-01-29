@@ -1391,6 +1391,24 @@ createApp({
             // 設定取得
             const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
 
+            // 出力対象ページのインデックスリストを作成
+            let targetPageIndices = [];
+            if (settings.rangeType === 'current') {
+                targetPageIndices = [activePageIndex.value];
+            } else if (settings.rangeType === 'custom') {
+                const start = Math.max(0, (settings.rangeStart || 1) - 1);
+                const end = Math.min(pages.value.length - 1, (settings.rangeEnd || 1) - 1);
+                for (let i = start; i <= end; i++) targetPageIndices.push(i);
+            } else {
+                // all
+                targetPageIndices = pages.value.map((_, i) => i);
+            }
+
+            if (targetPageIndices.length === 0) {
+                alert('出力対象のページがありません');
+                return;
+            }
+
             const useDirectory = 'showDirectoryPicker' in window;
             let dirHandle = null;
             if (useDirectory) {
@@ -1860,7 +1878,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
-            jumpToConte, jumpToName, progress, progressMessage, exportData 
+            jumpToConte, jumpToName, progress, progressMessage
         };
     }
 }).mount('#app');
