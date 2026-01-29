@@ -13,7 +13,6 @@ createApp({
         // UI状態
         const showSettings = ref(false);
         const showTextModal = ref(false);
-        const showExportModal = ref(false);
         const copiedPageId = ref(null);
         const showDrawingModal = ref(false);
         const currentEditingDrawing = ref(null);
@@ -25,12 +24,6 @@ createApp({
         const isProcessing = ref(false);
         const isExporting = ref(false);
         let autoSaveTimer = null;
-        const exportSettings = ref({
-            format: 'pdf',
-            rangeType: 'all',
-            rangeStart: 1,
-            rangeEnd: 1
-        });
 
         // データ・設定
         const pageConfig = ref({
@@ -1333,50 +1326,16 @@ createApp({
             }
         };
 
-        // 書き出しモーダルを開く
-        const openExportModal = () => {
-            exportSettings.value.rangeEnd = pages.value.length;
-            showExportModal.value = true;
-        };
-
-        // 書き出し実行
-        const executeExport = () => {
-            showExportModal.value = false;
-            exportData(exportSettings.value.format, exportSettings.value);
-        };
-
-        const exportData = async (format = 'png', optSettings = null) => {
+        const exportData = async (format = 'png') => {
             if (currentMode.value !== 'name') {
                 alert('ネームモードに切り替えてから実行します');
                 currentMode.value = 'name';
                 await nextTick();
             }
             
-            // 設定取得（引数がオブジェクトでない場合はデフォルト設定を使用）
-            const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
-            
-            // 出力対象ページのインデックスリストを作成
-            let targetPageIndices = [];
-            if (settings.rangeType === 'current') {
-                targetPageIndices = [activePageIndex.value];
-            } else if (settings.rangeType === 'custom') {
-                const start = Math.max(0, (settings.rangeStart || 1) - 1);
-                const end = Math.min(pages.value.length - 1, (settings.rangeEnd || 1) - 1);
-                for (let i = start; i <= end; i++) targetPageIndices.push(i);
-            } else {
-                // all
-                targetPageIndices = pages.value.map((_, i) => i);
-            }
-
-            if (targetPageIndices.length === 0) {
-                alert('出力対象のページがありません');
-                return;
-            }
-
             const useDirectory = 'showDirectoryPicker' in window;
             let dirHandle = null;
-            // PDFの場合は単一ファイル保存なのでディレクトリピッカーは使わない
-            if (useDirectory && format !== 'pdf') {
+            if (useDirectory) {
                 try {
                     dirHandle = await window.showDirectoryPicker();
                 } catch (e) {
@@ -1405,12 +1364,10 @@ createApp({
             await new Promise(r => setTimeout(r, 1000));
 
             const pageElements = document.querySelectorAll('.manga-page');
-            const zip = (useDirectory || format === 'pdf') ? null : new JSZip();
-            let pdfDoc = null;
+            const zip = useDirectory ? null : new JSZip();
 
             for (let i = 0; i < pageElements.length; i++) {
                 const el = pageElements[i];
-                // 非表示のページ（見開き調整用など）はスキップ
                 if (el.classList.contains('opacity-0')) continue;
                 
                 try {
@@ -1420,12 +1377,8 @@ createApp({
                     const domW = el.clientWidth;
                     const ratio = canvasW / domW;
                     const pageNum = el.id.replace('render-page-', '');
-                    const pageIndex = parseInt(pageNum);
 
-                    // 範囲外のページはスキップ
-                    if (!targetPageIndices.includes(pageIndex)) continue;
-
-                    if (format === 'png' || format === 'pdf') {
+                    if (format === 'png') {
                         const dataUrl = await htmlToImage.toPng(el, {
                             width: canvasW,
                             height: canvasH,
@@ -1438,33 +1391,16 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
+                        const blob = await (await fetch(dataUrl)).blob();
+                        const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.png`;
                         
-                        if (format === 'pdf') {
-                            // PDFへの追加
-                            if (!pdfDoc) {
-                                const { jsPDF } = window.jspdf;
-                                const orientation = canvasW > canvasH ? 'l' : 'p';
-                                pdfDoc = new jsPDF({
-                                    orientation: orientation,
-                                    unit: 'px',
-                                    format: [canvasW, canvasH]
-                                });
-                            } else {
-                                pdfDoc.addPage([canvasW, canvasH]);
-                            }
-                            pdfDoc.addImage(dataUrl, 'PNG', 0, 0, canvasW, canvasH);
-                        } else {
-                            // PNG保存
-                            const blob = await (await fetch(dataUrl)).blob();
-                            const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.png`;
-                            if (useDirectory && dirHandle) {
-                                const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
-                                const writable = await fileHandle.createWritable();
-                                await writable.write(blob);
-                                await writable.close();
-                            } else if (zip) {
-                                zip.file(fileName, blob);
-                            }
+                        if (useDirectory && dirHandle) {
+                            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+                            const writable = await fileHandle.createWritable();
+                            await writable.write(blob);
+                            await writable.close();
+                        } else if (zip) {
+                            zip.file(fileName, blob);
                         }
                     } else if (format === 'psd') {
                         const textDataUrl = await htmlToImage.toPng(el, {
@@ -1494,6 +1430,7 @@ createApp({
                         drawCanvas.width = canvasW;
                         drawCanvas.height = canvasH;
                         const dCtx = drawCanvas.getContext('2d');
+                        const pageIndex = parseInt(pageNum);
                         const pageData = pages.value[pageIndex];
                         
                         if (pageData) {
@@ -1621,7 +1558,7 @@ createApp({
                         
                         const buffer = agPsd.writePsd(psd);
                         const blob = new Blob([buffer]);
-                        const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.psd`;
+                        const fileName = `page_${String(Number(pageNum) + 1).padStart(3, '0')}.psd`;
                         
                         if (useDirectory && dirHandle) {
                             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
@@ -1644,9 +1581,7 @@ createApp({
             isExporting.value = false;
             isProcessing.value = false;
             
-            if (format === 'pdf' && pdfDoc) {
-                pdfDoc.save("manga_project.pdf");
-            } else if (zip) {
+            if (zip) {
                 zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip"));
             } else {
                 alert("保存完了");
@@ -1844,7 +1779,7 @@ createApp({
             isDrawingDragReady, onHandleDown, onHandleUp,
             selectedItemId, selectItem, isImageEditMode, toggleImageEditMode, onImageWheel, zoomImage,
             startLayoutDrag, startLayoutResize, moveItemPage, moveDrawingPage, exportData,
-            currentFileHandle, saveProject, saveProjectAs, loadProjectFromFile, showExportModal, exportSettings, openExportModal, executeExport,
+            currentFileHandle, saveProject, saveProjectAs, loadProjectFromFile,
             undo, redo, canUndo, canRedo,
             pageStyle, guideProps, isProcessing, isTextLayerMode, isHideGuideMode, isHideDrawingMode, isTransparentMode,
             drawingCountWarning, adjustHeight, focusNext, focusText, focusPrev, setInputRef, uniqueCharacters, fontOptions, fileInput, handleFileChange,
