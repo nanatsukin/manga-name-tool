@@ -271,7 +271,7 @@ createApp({
                 alert('コピー失敗: ' + e);
             }
         };
-        
+
         // タッチ・マウス両対応の座標取得関数
         const getClientPos = (e) => {
             if (e.touches && e.touches.length > 0) {
@@ -283,7 +283,7 @@ createApp({
         // ガイド描画用の座標計算
         const guideProps = (pageIndex) => {
             const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = pageConfig.value;
-            
+
             const fx = (canvasW - finishW) / 2;
             const fy = (canvasH - finishH) / 2;
             const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
@@ -294,17 +294,17 @@ createApp({
             const safeY = (fy + safeTop) * scale;
             const safeW = (finishW - si - so) * scale;
             const safeH = (finishH - safeTop - safeBottom) * scale;
-            
+
             const finishX = fx * scale;
             const finishY = fy * scale;
             const finishW_s = finishW * scale;
             const finishH_s = finishH * scale;
-            
+
             const bleedX = (fx - bleed) * scale;
             const bleedY = (fy - bleed) * scale;
             const bleedW = (finishW + bleed * 2) * scale;
             const bleedH = (finishH + bleed * 2) * scale;
-            
+
             const cx = (canvasW / 2) * scale;
             const cy = (canvasH / 2) * scale;
 
@@ -468,11 +468,11 @@ createApp({
             if (mode === 'plot') {
                 nextTick(() => resizeTextareas());
             }
-           
+
             else if (mode === 'name') {
                 nextTick(() => {
                     if (nameModeContainer.value) {
-                         // 新しいモードがネームモードなら、スクロール位置を復元
+                        // 新しいモードがネームモードなら、スクロール位置を復元
                         nameModeContainer.value.scrollTop = nameModeScrollTop;
                     }
                 });
@@ -561,13 +561,28 @@ createApp({
             const viewportCenterY = (nameModeContainer.value?.scrollTop || 0) + (window.innerHeight / 2) - 100;
             // ページ内座標に変換（簡易的）
             const y = Math.max(50, Math.min(pageConfig.value.canvasH * pageConfig.value.scale - 100, viewportCenterY));
-            
+
             page.scripts.push({ id: Date.now(), type: 'note', char: '', text: '注意書き', drawingId: null, layout: { x: 100, y: y, fontSize: 16 } });
         };
 
         const nextPage = async () => { if (activePageIndex.value < pages.value.length - 1) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value++; } };
         const prevPage = async () => { if (activePageIndex.value > 0) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value--; } };
-        const selectItem = (id) => { selectedItemId.value = id; if (id === null) isImageEditMode.value = false; };
+        const selectItem = (id) => {
+            selectedItemId.value = id;
+            if (id === null) {
+                isImageEditMode.value = false;
+                return;
+            }
+
+            // 選択したアイテムがどのページにあるか探し、activePageIndexを更新する
+            pages.value.forEach((page, pIdx) => {
+                const hasDrawing = page.drawings.some(d => d.id === id);
+                const hasScript = page.scripts.some(s => s.id === id);
+                if (hasDrawing || hasScript) {
+                    activePageIndex.value = pIdx;
+                }
+            });
+        };
         const toggleImageEditMode = () => { isImageEditMode.value = !isImageEditMode.value; };
         const getUnassignedScripts = (pIdx) => {
             const page = pages.value[pIdx];
@@ -575,7 +590,7 @@ createApp({
             return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
         };
         const getScriptsForDrawing = (pIdx, drawingId) => pages.value[pIdx].scripts.filter(s => s.drawingId === drawingId);
-        
+
         const addDrawing = (pIdx) => {
             const targetIdx = (typeof pIdx === 'number') ? pIdx : activePageIndex.value;
             const newDrawing = {
@@ -589,7 +604,7 @@ createApp({
             pages.value[targetIdx].drawings.push(newDrawing);
             nextTick(() => saveHistory(newDrawing));
         };
-        
+
         const removeDrawing = (pIdx, idx) => {
             if (confirm('削除しますか？')) {
                 const removedId = pages.value[pIdx].drawings[idx].id;
@@ -682,7 +697,7 @@ createApp({
         const dragStart = (pIndex, idx) => {
             draggingItem.value = { pIndex, idx };
         };
-        
+
         const dragOverScript = (pIndex, idx) => {
             if (draggingItem.value.pIndex === pIndex && draggingItem.value.idx === idx) {
                 if (dropTarget.value !== null) dropTarget.value = null;
@@ -692,12 +707,12 @@ createApp({
                 dropTarget.value = { pIndex, idx };
             }
         };
-        
+
         const dragOverPage = (pIndex) => {
             if (dropTarget.value && dropTarget.value.pIndex === pIndex && dropTarget.value.idx !== null) return;
             dropTarget.value = { pIndex, idx: null };
         };
-        
+
         const dropOnScript = (pIndex, idx) => executeScriptMove(pIndex, idx);
         const dropOnPage = (pIndex) => executeScriptMove(pIndex, null);
         const dragEnd = () => {
@@ -1146,7 +1161,7 @@ createApp({
             document.removeEventListener('mouseup', stopInteract);
             document.removeEventListener('touchend', stopInteract); // 追加
         };
-        
+
         const moveItemPage = (pageIdx, type, itemIdx, dir) => {
             const targetPageIdx = pageIdx + dir;
             if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
@@ -1154,7 +1169,7 @@ createApp({
                 pages.value[targetPageIdx][type].push(item);
             }
         };
-        
+
         const moveDrawingPage = async (pageIdx, drawingIdx, dir) => {
             const targetPageIdx = pageIdx + dir;
             if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
@@ -1168,6 +1183,116 @@ createApp({
                 }
                 pages.value[targetPageIdx].scripts.push(...relatedScripts);
             }
+        };
+
+        const autoLayoutCurrentPage = () => {
+            const pIdx = activePageIndex.value;
+            const page = pages.value[pIdx];
+            const config = pageConfig.value;
+            const scale = config.scale; // 画面上の表示倍率（Canvas座標への変換用ではない点に注意が必要だが、今回は座標系統一のためそのまま利用）
+
+            if (!page) return;
+
+            // --- 1. 基本枠（安全圏）の範囲を計算 ---
+            const fx = (config.canvasW - config.finishW) / 2;
+            const fy = (config.canvasH - config.finishH) / 2;
+            const isRightPage = (pIdx === 0) || (pIdx % 2 !== 0);
+            const si = isRightPage ? config.safeInside : config.safeOutside;
+            const so = isRightPage ? config.safeOutside : config.safeInside;
+
+            // 画面座標系へ変換
+            const safeX = (fx + si) * scale;
+            const safeY = (fy + config.safeTop) * scale;
+            const safeW = (config.finishW - si - so) * scale;
+            const safeH = (config.finishH - config.safeTop - config.safeBottom) * scale;
+
+            // --- 2. コマ(Drawing)の配置 ---
+            const panelMargin = 20;
+            let currentY = safeY;
+
+            page.drawings.forEach((drawing, dIdx) => {
+                const col = dIdx % 2; // 0:右, 1:左
+
+                // コマ幅調整
+                const colW = (safeW - panelMargin) / 2;
+                const ratio = drawing.layout.h / drawing.layout.w;
+                drawing.layout.w = colW;
+                drawing.layout.h = colW * ratio;
+
+                // X座標
+                if (col === 0) {
+                    drawing.layout.x = safeX + safeW - drawing.layout.w;
+                } else {
+                    drawing.layout.x = safeX;
+                    const prev = page.drawings[dIdx - 1];
+                    const rowH = Math.max(drawing.layout.h, prev ? prev.layout.h : 0);
+                    currentY += rowH + panelMargin;
+                }
+
+                // Y座標
+                drawing.layout.y = (col === 1 && page.drawings[dIdx - 1]) ? page.drawings[dIdx - 1].layout.y : currentY;
+
+                // はみ出し防止
+                if (drawing.layout.y + drawing.layout.h > safeY + safeH) {
+                    drawing.layout.y = safeY + safeH - drawing.layout.h;
+                }
+            });
+
+            // --- 3. セリフ(Script)の配置（行数考慮） ---
+            page.drawings.forEach((drawing) => {
+                const scripts = getScriptsForDrawing(pIdx, drawing.id);
+                if (scripts.length > 0) {
+                    const dX = drawing.layout.x;
+                    const dY = drawing.layout.y;
+                    const dW = drawing.layout.w;
+
+                    const innerMarginTop = 20;
+                    const innerMarginSide = 10;
+
+                    // 配置に使える有効幅
+                    const usableW = dW - (innerMarginSide * 2);
+
+                    // セリフごとの送り幅（右→左）
+                    // 複数ある場合は均等に散らす
+                    const stepX = scripts.length > 1 ? (usableW / scripts.length) : 0;
+
+                    scripts.forEach((script, sIdx) => {
+                        // フォントサイズと行数を取得して、セリフの「幅」を計算する
+                        const fontSize = script.layout.fontSize || 18;
+                        // 改行コードで分割して行数をカウント（最低1行）
+                        const lineCount = script.text ? script.text.split('\n').length : 1;
+                        // 縦書きの行間（line-height）は通常1.5倍程度
+                        const lineHeight = 1.5;
+                        // 実質的なテキストボックスの幅
+                        const scriptWidth = lineCount * fontSize * lineHeight;
+
+                        // セリフの「右端」が来てほしい位置を計算
+                        // (コマ右端 - マージン) からスタートし、インデックス順に左へずらす
+                        const targetRightEdge = (dX + dW) - innerMarginSide - (stepX * sIdx);
+
+                        // 左上座標(x) = 右端位置 - テキスト幅
+                        script.layout.x = targetRightEdge - scriptWidth;
+
+                        // Y座標はコマの上端 + マージン
+                        script.layout.y = dY + innerMarginTop;
+
+                        // フォントサイズ未定義なら初期値設定
+                        if (script.layout.fontSize === undefined) {
+                            script.layout.fontSize = 18;
+                        }
+                    });
+                }
+            });
+
+            // --- 4. 未割り当てセリフ ---
+            const unassigned = getUnassignedScripts(pIdx);
+            unassigned.forEach((script, uIdx) => {
+                script.layout.x = safeX + safeW + 20;
+                script.layout.y = safeY + (uIdx * 120);
+                if (script.layout.fontSize === undefined) {
+                    script.layout.fontSize = 18;
+                }
+            });
         };
 
         // 指定したインデックス以降の全セリフを新しいページに移動する
@@ -1387,7 +1512,7 @@ createApp({
                 currentMode.value = 'name';
                 await nextTick();
             }
-            
+
             // 設定取得
             const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
 
@@ -1418,12 +1543,12 @@ createApp({
                     return;
                 }
             }
-            
+
             isExporting.value = true;
             isProcessing.value = true;
             progress.value = 0;
             progressMessage.value = '準備中...';
-            
+
             if (format === 'psd') {
                 isTextLayerMode.value = true;
                 isHideGuideMode.value = true;
@@ -1452,7 +1577,7 @@ createApp({
 
                 const el = pageElements[i];
                 if (el.classList.contains('opacity-0')) continue;
-                
+
                 try {
                     const canvasW = pageConfig.value.canvasW;
                     const canvasH = pageConfig.value.canvasH;
@@ -1478,7 +1603,7 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
-                        
+
                         // PNG保存
                         const blob = await (await fetch(dataUrl)).blob();
                         const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.png`;
@@ -1504,11 +1629,11 @@ createApp({
                             },
                             filter: (node) => (node.id !== 'font-awesome')
                         });
-                        
+
                         const textImg = new Image();
                         textImg.src = textDataUrl;
                         await new Promise(r => textImg.onload = r);
-                        
+
                         const textCanvas = document.createElement('canvas');
                         textCanvas.width = canvasW;
                         textCanvas.height = canvasH;
@@ -1519,28 +1644,28 @@ createApp({
                         drawCanvas.height = canvasH;
                         const dCtx = drawCanvas.getContext('2d');
                         const pageData = pages.value[pageIndex];
-                        
+
                         if (pageData) {
                             for (const d of pageData.drawings) {
                                 if (d.imgSrc) {
                                     const img = new Image();
                                     img.src = d.imgSrc;
                                     await new Promise(r => img.onload = r);
-                                    
+
                                     const x = d.layout.x / scale;
                                     const y = d.layout.y / scale;
                                     const w = d.layout.w / scale;
                                     const h = d.layout.h / scale;
-                                    
+
                                     dCtx.save();
                                     dCtx.beginPath();
                                     dCtx.rect(x, y, w, h);
                                     dCtx.clip();
-                                    
+
                                     const ix = (d.inner?.x || 0) / scale;
                                     const iy = (d.inner?.y || 0) / scale;
                                     const is = d.inner?.scale || 1;
-                                    
+
                                     const imgCenterX = x + w / 2 + ix;
                                     const imgCenterY = y + h / 2 + iy;
                                     const ratioImg = Math.min(w / img.width, h / img.height) * is;
@@ -1548,10 +1673,10 @@ createApp({
                                     const dh = img.height * ratioImg;
                                     const dx = imgCenterX - dw / 2;
                                     const dy = imgCenterY - dh / 2;
-                                    
+
                                     dCtx.drawImage(img, dx, dy, dw, dh);
                                     dCtx.restore();
-                                    
+
                                     dCtx.strokeStyle = "black";
                                     dCtx.lineWidth = 2 / scale;
                                     dCtx.strokeRect(x, y, w, h);
@@ -1563,20 +1688,20 @@ createApp({
                         guideCanvas.width = canvasW;
                         guideCanvas.height = canvasH;
                         const gCtx = guideCanvas.getContext('2d');
-                        
+
                         const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = pageConfig.value;
                         const fx = (canvasW - finishW) / 2;
                         const fy = (canvasH - finishH) / 2;
-                        
+
                         gCtx.strokeStyle = "rgba(136, 146, 230, 0.8)";
                         gCtx.lineWidth = 1;
                         gCtx.strokeRect(fx, fy, finishW, finishH);
-                        
+
                         const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
                         const si = isRight ? safeInside : safeOutside;
                         const so = isRight ? safeOutside : safeInside;
                         gCtx.strokeRect(fx + si, fy + safeTop, finishW - si - so, finishH - safeTop - safeBottom);
-                        
+
                         const bx = fx - bleed;
                         const by = fy - bleed;
                         const bw = finishW + bleed * 2;
@@ -1592,7 +1717,7 @@ createApp({
                         const cx = canvasW / 2;
                         const cy = canvasH / 2;
                         const cLen = 200;
-                        
+
                         // Center marks
                         gCtx.moveTo(cx, by); gCtx.lineTo(cx, by - tExt);
                         gCtx.moveTo(cx - cLen, by - tExt / 2); gCtx.lineTo(cx + cLen, by - tExt / 2);
@@ -1602,36 +1727,36 @@ createApp({
                         gCtx.moveTo(bx - tExt / 2, cy - cLen); gCtx.lineTo(bx - tExt / 2, cy + cLen);
                         gCtx.moveTo(bxr, cy); gCtx.lineTo(bxr + tExt, cy);
                         gCtx.moveTo(bxr + tExt / 2, cy - cLen); gCtx.lineTo(bxr + tExt / 2, cy + cLen);
-                        
+
                         // Corner marks (Tonbo)
                         gCtx.moveTo(fx, by); gCtx.lineTo(fx, by - tExt);
                         gCtx.moveTo(bx, by); gCtx.lineTo(bx, by - tExt);
                         gCtx.moveTo(bx, fy); gCtx.lineTo(bx - tExt, fy);
                         gCtx.moveTo(bx, by); gCtx.lineTo(bx - tExt, by);
-                        
+
                         gCtx.moveTo(fxr, by); gCtx.lineTo(fxr, by - tExt);
                         gCtx.moveTo(bxr, by); gCtx.lineTo(bxr, by - tExt);
                         gCtx.moveTo(bxr, fy); gCtx.lineTo(bxr + tExt, fy);
                         gCtx.moveTo(bxr, by); gCtx.lineTo(bxr + tExt, by);
-                        
+
                         gCtx.moveTo(fx, byb); gCtx.lineTo(fx, byb + tExt);
                         gCtx.moveTo(bx, byb); gCtx.lineTo(bx, byb + tExt);
                         gCtx.moveTo(bx, fyb); gCtx.lineTo(bx - tExt, fyb);
                         gCtx.moveTo(bx, byb); gCtx.lineTo(bx - tExt, byb);
-                        
+
                         gCtx.moveTo(fxr, byb); gCtx.lineTo(fxr, byb + tExt);
                         gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr, byb + tExt);
                         gCtx.moveTo(bxr, fyb); gCtx.lineTo(bxr + tExt, fyb);
                         gCtx.moveTo(bxr, byb); gCtx.lineTo(bxr + tExt, byb);
-                        
+
                         gCtx.stroke();
-                        
+
                         const bgCanvas = document.createElement('canvas');
                         bgCanvas.width = canvasW;
                         bgCanvas.height = canvasH;
                         bgCanvas.getContext('2d').fillStyle = "white";
                         bgCanvas.getContext('2d').fillRect(0, 0, canvasW, canvasH);
-                        
+
                         const psd = {
                             width: canvasW,
                             height: canvasH,
@@ -1642,11 +1767,11 @@ createApp({
                                 { name: 'Text', canvas: textCanvas }
                             ]
                         };
-                        
+
                         const buffer = agPsd.writePsd(psd);
                         const blob = new Blob([buffer]);
                         const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.psd`;
-                        
+
                         if (useDirectory && dirHandle) {
                             const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
                             const writable = await fileHandle.createWritable();
@@ -1660,7 +1785,7 @@ createApp({
                     console.error(e);
                 }
             }
-            
+
             isTextLayerMode.value = false;
             isHideGuideMode.value = false;
             isHideDrawingMode.value = false;
@@ -1669,7 +1794,7 @@ createApp({
             isProcessing.value = false;
             progress.value = 0;
             progressMessage.value = '';
-            
+
             if (zip) {
                 zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip"));
             } else {
@@ -1878,7 +2003,7 @@ createApp({
             moveScript, insertScriptAfter, copyAllPlots, getClientPos,
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
-            jumpToConte, jumpToName, progress, progressMessage
+            jumpToConte, jumpToName, progress, progressMessage, autoLayoutCurrentPage
         };
     }
 }).mount('#app');

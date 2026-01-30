@@ -28,7 +28,8 @@
             <div class="text-xl font-bold tracking-widest animate-pulse">処理中...</div>
             <div class="text-xl font-bold tracking-widest animate-pulse mb-4">{{ progressMessage || '処理中...' }}</div>
             <div class="w-64 h-2 bg-gray-700 rounded-full overflow-hidden border border-gray-600" v-if="progress > 0">
-                <div class="h-full bg-blue-500 transition-all duration-300 ease-out" :style="{ width: progress + '%' }"></div>
+                <div class="h-full bg-blue-500 transition-all duration-300 ease-out" :style="{ width: progress + '%' }">
+                </div>
             </div>
         </div>
 
@@ -113,26 +114,42 @@
                 <div class="mb-4">
                     <label class="block text-sm font-bold mb-2 text-gray-300">形式</label>
                     <div class="flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG (連番画像ZIP)</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD (レイヤー保持ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.format" value="png" class="accent-blue-500"> PNG
+                            (連番画像ZIP)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.format" value="psd" class="accent-blue-500"> PSD
+                            (レイヤー保持ZIP)</label>
                     </div>
                 </div>
                 <div class="mb-6">
                     <label class="block text-sm font-bold mb-2 text-gray-300">ページ範囲</label>
                     <div class="space-y-2 text-sm">
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{ pages.length }}ページ)</label>
-                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ (Page {{ activePageIndex + 1 }})</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.rangeType" value="all" class="accent-blue-500"> すべてのページ ({{
+                            pages.length }}ページ)</label>
+                        <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                v-model="exportSettings.rangeType" value="current" class="accent-blue-500"> 現在のページのみ
+                            (Page {{ activePageIndex + 1 }})</label>
                         <div class="flex items-center gap-2">
-                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio" v-model="exportSettings.rangeType" value="custom" class="accent-blue-500"> ページ指定:</label>
-                            <input type="number" v-model.number="exportSettings.rangeStart" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="radio"
+                                    v-model="exportSettings.rangeType" value="custom" class="accent-blue-500">
+                                ページ指定:</label>
+                            <input type="number" v-model.number="exportSettings.rangeStart"
+                                class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1"
+                                :max="pages.length">
                             <span>〜</span>
-                            <input type="number" v-model.number="exportSettings.rangeEnd" class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1" :max="pages.length">
+                            <input type="number" v-model.number="exportSettings.rangeEnd"
+                                class="w-16 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-center" min="1"
+                                :max="pages.length">
                         </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-2 mt-6">
-                    <button @click="showExportModal = false" class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
-                    <button @click="executeExport" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
+                    <button @click="showExportModal = false"
+                        class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm">キャンセル</button>
+                    <button @click="executeExport"
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded font-bold text-sm shadow">書き出し実行</button>
                 </div>
             </div>
         </div>
@@ -190,7 +207,7 @@
                     <button @click="openExportModal" :disabled="isExporting"
                         class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition"><i class="fas"
                             :class="isExporting ? 'fa-spinner fa-spin' : 'fa-file-export'"></i> 書き出し</button>
-                    
+
                     <button v-if="currentMode === 'name'" @click="addNoteToCurrentPage"
                         class="bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded transition ml-2 shadow-sm border border-red-400">
                         <i class="fas fa-sticky-note"></i> ＋注意書き</button>
@@ -334,9 +351,11 @@
             <div v-if="currentMode === 'plot'" class="h-full overflow-y-auto pb-20">
                 <div class="max-w-6xl mx-auto p-0 md:p-4">
                     <!-- プロット全体操作ヘッダー -->
-                    <div class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex justify-between items-center shadow-md mx-2 md:mx-0 sticky top-0 z-30">
+                    <div
+                        class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex justify-between items-center shadow-md mx-2 md:mx-0 sticky top-0 z-30">
                         <span class="text-sm font-bold text-gray-300 pl-2"><i class="fas fa-list"></i> プロット編集</span>
-                        <button @click="sortAllScriptsByConteOrder" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-2">
+                        <button @click="sortAllScriptsByConteOrder"
+                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-2">
                             <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
                         </button>
                     </div>
@@ -377,11 +396,14 @@
 
                                     <div
                                         class="w-24 md:w-28 flex-none border-r border-gray-700 flex items-center h-full">
-                                        <input v-if="script.type !== 'note'" v-model="script.char" list="char-name-suggestions" placeholder="名前"
+                                        <input v-if="script.type !== 'note'" v-model="script.char"
+                                            list="char-name-suggestions" placeholder="名前"
                                             class="panel-input w-full text-xs font-bold text-blue-200 px-2 py-2 bg-transparent"
                                             :ref="el => setInputRef(el, pIndex, idx, 'char')"
                                             @keydown.enter.prevent="focusText(pIndex, idx)">
-                                        <div v-else class="w-full text-xs text-red-400 px-2 font-bold flex items-center h-full bg-red-900/10">注意書き</div>
+                                        <div v-else
+                                            class="w-full text-xs text-red-400 px-2 font-bold flex items-center h-full bg-red-900/10">
+                                            注意書き</div>
                                     </div>
 
                                     <div class="w-14 md:w-12 flex-none flex items-center justify-center border-r border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors h-full"
@@ -444,7 +466,8 @@
                                     </div>
                                 </div>
 
-                                <div class="flex-1 min-w-0 relative flex flex-col justify-center bg-transparent min-h-0">
+                                <div
+                                    class="flex-1 min-w-0 relative flex flex-col justify-center bg-transparent min-h-0">
                                     <textarea v-model="script.text" rows="1" placeholder="内容..."
                                         class="panel-input w-full text-sm leading-relaxed py-3 px-4 focus:bg-gray-900/50 transition-colors resize-none overflow-hidden block"
                                         :class="{'text-red-300': script.type === 'note'}"
@@ -635,6 +658,13 @@
 
             <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-600 p-8"
                 @mousedown="selectItem(null)">
+
+                <div class="fixed bottom-8 right-8 z-[100] no-export">
+                    <button @click="autoLayoutCurrentPage" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 border-2 border-white transition-transform active:scale-95 opacity-90 hover:opacity-100">
+                        <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
+                    </button>
+                </div>
+
                 <div class="flex flex-col items-center origin-top pb-20">
                     <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container">
                         <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
@@ -722,8 +752,9 @@
                                 @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
 
                                 <!-- 注意書きの場合（横書き・赤字） -->
-                                <div v-if="script.type === 'note'" class="font-sans select-none pointer-events-none border border-red-500 bg-white/80 text-red-600 px-2 py-1 rounded shadow-sm whitespace-pre-wrap"
-                                     :style="{ fontSize: script.layout.fontSize + 'px', minWidth: '100px' }">
+                                <div v-if="script.type === 'note'"
+                                    class="font-sans select-none pointer-events-none border border-red-500 bg-white/80 text-red-600 px-2 py-1 rounded shadow-sm whitespace-pre-wrap"
+                                    :style="{ fontSize: script.layout.fontSize + 'px', minWidth: '100px' }">
                                     <i class="fas fa-exclamation-circle mr-1"></i>{{ script.text }}
                                 </div>
 
