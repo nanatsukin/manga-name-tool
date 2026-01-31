@@ -40,7 +40,8 @@ createApp({
             finishW: 5197, finishH: 7323,
             bleed: 118, safeTop: 472, safeBottom: 472, safeInside: 472, safeOutside: 472,
             scale: 0.12,
-            fontFamily: '"HiraMinProN-W3", "Yu Mincho", "MS PMincho", "Hiragino Mincho ProN", serif' // デフォルトは明朝
+            fontFamily: '"HiraMinProN-W3", "Yu Mincho", "MS PMincho", "Hiragino Mincho ProN", serif', // デフォルトは明朝
+            defaultFontSize: 18 // 基本フォントサイズ
         });
         const pages = ref([{ id: Date.now(), scripts: [], drawings: [] }]);
 
@@ -564,7 +565,7 @@ createApp({
             nextTick(() => resizeTextareas());
         };
 
-        const addScript = (pIdx) => { pages.value[pIdx].scripts.push({ id: Date.now() + Math.random(), type: 'dialogue', char: '', text: '', drawingId: null, layout: { x: 300, y: 200, fontSize: 14 } }); nextTick(() => resizeTextareas()); };
+        const addScript = (pIdx) => { pages.value[pIdx].scripts.push({ id: Date.now() + Math.random(), type: 'dialogue', char: '', text: '', drawingId: null, layout: { x: 300, y: 200, fontSize: pageConfig.value.defaultFontSize } }); nextTick(() => resizeTextareas()); };
 
         // 削除処理
         const removeScript = (pIndex, idx) => {
@@ -613,7 +614,7 @@ createApp({
             // ページ内座標に変換（簡易的）
             const y = Math.max(50, Math.min(pageConfig.value.canvasH * pageConfig.value.scale - 100, viewportCenterY));
 
-            page.scripts.push({ id: Date.now(), type: 'note', char: '', text: '注意書き', drawingId: null, layout: { x: 100, y: y, fontSize: 16 } });
+            page.scripts.push({ id: Date.now(), type: 'note', char: '', text: '注意書き', drawingId: null, layout: { x: 100, y: y, fontSize: pageConfig.value.defaultFontSize } });
             recordNameHistory();
         };
 
@@ -1317,7 +1318,7 @@ createApp({
 
                     scripts.forEach((script, sIdx) => {
                         // フォントサイズと行数を取得して、セリフの「幅」を計算する
-                        const fontSize = script.layout.fontSize || 18;
+                        const fontSize = script.layout.fontSize || config.defaultFontSize || 18;
                         // 改行コードで分割して行数をカウント（最低1行）
                         const lineCount = script.text ? script.text.split('\n').length : 1;
                         // 縦書きの行間（line-height）は通常1.5倍程度
@@ -1337,7 +1338,7 @@ createApp({
 
                         // フォントサイズ未定義なら初期値設定
                         if (script.layout.fontSize === undefined) {
-                            script.layout.fontSize = 18;
+                            script.layout.fontSize = config.defaultFontSize || 18;
                         }
                     });
                 }
@@ -1349,10 +1350,21 @@ createApp({
                 script.layout.x = safeX + safeW + 20;
                 script.layout.y = safeY + (uIdx * 120);
                 if (script.layout.fontSize === undefined) {
-                    script.layout.fontSize = 18;
+                    script.layout.fontSize = config.defaultFontSize || 18;
                 }
             });
             recordNameHistory();
+        };
+
+        // 全ページのセリフのフォントサイズを一括適用
+        const applyFontSizeToAll = () => {
+            if (!confirm(`すべてのページのセリフのフォントサイズを、現在の設定値(${pageConfig.value.defaultFontSize}px)に統一しますか？`)) return;
+            pages.value.forEach(p => {
+                p.scripts.forEach(s => {
+                    s.layout.fontSize = pageConfig.value.defaultFontSize;
+                });
+            });
+            if (currentMode.value === 'name') recordNameHistory();
         };
 
         // 指定したインデックス以降の全セリフを新しいページに移動する
@@ -2064,7 +2076,7 @@ createApp({
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
             jumpToConte, jumpToName, progress, progressMessage, autoLayoutCurrentPage
-            , undoName, redoName
+            , undoName, redoName, applyFontSizeToAll
         };
     }
 }).mount('#app');

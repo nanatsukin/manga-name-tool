@@ -320,14 +320,22 @@
                         </div>
 
                         <div>
-                            <h3 class="font-bold text-gray-400 mb-2 text-xs border-l-4 border-yellow-500 pl-2">表示フォント
-                            </h3>
-                            <select v-model="pageConfig.fontFamily"
-                                class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm">
-                                <option v-for="opt in fontOptions" :key="opt.label" :value="opt.value">
-                                    {{ opt.label }}
-                                </option>
-                            </select>
+                            <h3 class="font-bold text-gray-400 mb-2 text-xs border-l-4 border-yellow-500 pl-2">フォント設定</h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs mb-1">フォントファミリー</label>
+                                    <select v-model="pageConfig.fontFamily" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm">
+                                        <option v-for="opt in fontOptions" :key="opt.label" :value="opt.value">{{ opt.label }}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs mb-1">基本フォントサイズ (px)</label>
+                                    <div class="flex gap-2 items-center">
+                                        <input type="number" v-model.number="pageConfig.defaultFontSize" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm">
+                                        <button @click="applyFontSizeToAll" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded border border-gray-600 transition">全セリフに適用</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="border-t border-gray-700 pt-4">
