@@ -84,6 +84,53 @@ createApp({
         const nameModeContainer = ref(null);
         let nameModeScrollTop = 0;
 
+        // --- ネームモード用履歴管理 ---
+        const nameHistory = ref([]);
+        const nameHistoryIndex = ref(-1);
+
+        const recordNameHistory = () => {
+            if (currentMode.value !== 'name') return;
+
+            // 履歴の分岐処理（リドゥスタックの削除）
+            if (nameHistoryIndex.value < nameHistory.value.length - 1) {
+                nameHistory.value = nameHistory.value.slice(0, nameHistoryIndex.value + 1);
+            }
+
+            const snapshot = JSON.stringify(pages.value);
+
+            // 重複保存の防止
+            if (nameHistory.value.length > 0 && nameHistory.value[nameHistory.value.length - 1] === snapshot) {
+                return;
+            }
+
+            nameHistory.value.push(snapshot);
+            nameHistoryIndex.value++;
+
+            // 履歴数の制限（例: 50回）
+            if (nameHistory.value.length > 50) {
+                nameHistory.value.shift();
+                nameHistoryIndex.value--;
+            }
+        };
+
+        const undoName = () => {
+            if (nameHistoryIndex.value > 0) {
+                nameHistoryIndex.value--;
+                try {
+                    pages.value = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
+                } catch (e) { console.error(e); }
+            }
+        };
+
+        const redoName = () => {
+            if (nameHistoryIndex.value < nameHistory.value.length - 1) {
+                nameHistoryIndex.value++;
+                try {
+                    pages.value = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
+                } catch (e) { console.error(e); }
+            }
+        };
+
         // --- Computed Properties ---
         const saveStatusText = computed(() => {
             switch (saveStatus.value) {
@@ -475,6 +522,10 @@ createApp({
                         // 新しいモードがネームモードなら、スクロール位置を復元
                         nameModeContainer.value.scrollTop = nameModeScrollTop;
                     }
+                    // ネームモードに入った時点で履歴を初期化・記録
+                    nameHistory.value = [];
+                    nameHistoryIndex.value = -1;
+                    recordNameHistory();
                 });
             }
         };
@@ -563,6 +614,7 @@ createApp({
             const y = Math.max(50, Math.min(pageConfig.value.canvasH * pageConfig.value.scale - 100, viewportCenterY));
 
             page.scripts.push({ id: Date.now(), type: 'note', char: '', text: '注意書き', drawingId: null, layout: { x: 100, y: y, fontSize: 16 } });
+            recordNameHistory();
         };
 
         const nextPage = async () => { if (activePageIndex.value < pages.value.length - 1) { if (currentMode.value === 'conte') await saveAllCanvases(); activePageIndex.value++; } };
@@ -1151,6 +1203,7 @@ createApp({
         };
 
         const stopInteract = () => {
+            const wasInteracting = !!interactTarget;
             interactTarget = null;
             document.removeEventListener('mousemove', onLayoutDrag);
             document.removeEventListener('touchmove', onLayoutDrag); // 追加
@@ -1160,6 +1213,10 @@ createApp({
             document.removeEventListener('touchmove', onLayoutResize); // 追加
             document.removeEventListener('mouseup', stopInteract);
             document.removeEventListener('touchend', stopInteract); // 追加
+
+            if (currentMode.value === 'name' && wasInteracting) {
+                recordNameHistory();
+            }
         };
 
         const moveItemPage = (pageIdx, type, itemIdx, dir) => {
@@ -1167,6 +1224,7 @@ createApp({
             if (targetPageIdx >= 0 && targetPageIdx < pages.value.length) {
                 const item = pages.value[pageIdx][type].splice(itemIdx, 1)[0];
                 pages.value[targetPageIdx][type].push(item);
+                recordNameHistory();
             }
         };
 
@@ -1182,6 +1240,7 @@ createApp({
                     if (pages.value[pageIdx].scripts[i].drawingId === drawing.id) { pages.value[pageIdx].scripts.splice(i, 1); }
                 }
                 pages.value[targetPageIdx].scripts.push(...relatedScripts);
+                if (currentMode.value === 'name') recordNameHistory();
             }
         };
 
@@ -1293,6 +1352,7 @@ createApp({
                     script.layout.fontSize = 18;
                 }
             });
+            recordNameHistory();
         };
 
         // 指定したインデックス以降の全セリフを新しいページに移動する
@@ -2004,6 +2064,7 @@ createApp({
             showDrawingModal, currentEditingDrawing, modalCanvasRef,
             openDrawingModal, closeDrawingModal, jumpToPlot, nameModeContainer, sortAllScriptsByConteOrder, toggleScriptType, addNoteToCurrentPage,
             jumpToConte, jumpToName, progress, progressMessage, autoLayoutCurrentPage
+            , undoName, redoName
         };
     }
 }).mount('#app');

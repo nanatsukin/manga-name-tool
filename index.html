@@ -659,7 +659,15 @@
             <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-600 p-8"
                 @mousedown="selectItem(null)">
 
-                <div class="fixed bottom-8 right-8 z-[100] no-export">
+                <div class="fixed bottom-8 right-8 z-[100] no-export flex flex-col gap-3 items-end">
+                    <div class="flex gap-2">
+                        <button @click="undoName()" class="bg-gray-800 hover:bg-gray-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center border border-gray-600 transition active:scale-95" title="元に戻す">
+                            <i class="fas fa-rotate-left"></i>
+                        </button>
+                        <button @click="redoName()" class="bg-gray-800 hover:bg-gray-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center border border-gray-600 transition active:scale-95" title="やり直す">
+                            <i class="fas fa-rotate-right"></i>
+                        </button>
+                    </div>
                     <button @click="autoLayoutCurrentPage" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 border-2 border-white transition-transform active:scale-95 opacity-90 hover:opacity-100">
                         <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
                     </button>
