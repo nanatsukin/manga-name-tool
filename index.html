@@ -540,9 +540,9 @@
                             class="fas fa-plus"></i> コマ追加</button>
                 </div>
 
-                <div class="flex-1 overflow-hidden flex">
+                <div class="conte-body flex-1 overflow-hidden flex">
                     <div
-                        class="flex-1 overflow-y-auto p-6 bg-gray-800 border-r border-gray-700 flex flex-col items-center scroll-smooth">
+                        class="conte-panel-area flex-1 overflow-y-auto p-6 bg-gray-800 border-r border-gray-700 flex flex-col items-center scroll-smooth">
                         <div class="w-full max-w-4xl space-y-6 pb-20">
                             <div class="flex justify-between items-center mb-2">
                                 <h3 class="text-sm font-bold text-gray-400">絵コンテ構成</h3>
@@ -560,11 +560,11 @@
                                 :draggable="isDrawingDragReady" @dragstart="dragStartDrawing($event, dIdx)"
                                 @dragend="dragEndDrawing" @dragover.prevent="dragOverDrawing(dIdx)"
                                 @drop.stop="dropOnDrawing(dIdx)" :id="'conte-drawing-' + drawing.id"
-                                class="bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-600 flex flex-row transition-transform duration-200"
+                                class="conte-card bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-600 flex flex-row transition-transform duration-200"
                                 :class="{'drawing-dragging': draggingDrawingIndex === dIdx, 'drawing-drop-target': dropTargetDrawingIndex === dIdx}">
 
-                                <div class="flex flex-col shrink-0 border-r border-gray-700">
-                                    <div class="relative bg-white group cursor-pointer"
+                                <div class="conte-card-image flex flex-col shrink-0 border-r border-gray-700">
+                                    <div class="conte-card-preview relative bg-white group cursor-pointer"
                                         style="width: 360px; height: 240px;" @click="openDrawingModal(drawing)">
                                         <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
                                             class="preview-image w-full h-full object-contain pointer-events-none">
@@ -603,7 +603,7 @@
                                                 class="fas fa-trash-alt"></i> 削除</button>
                                     </div>
                                 </div>
-                                <div class="flex-1 p-3 bg-gray-800 transition-colors relative flex flex-col min-h-[280px]"
+                                <div class="conte-card-scripts flex-1 p-3 bg-gray-800 transition-colors relative flex flex-col min-h-[280px]"
                                     @dragover.prevent="dragOverConteScript(drawing.id)"
                                     @drop.stop="dropOnConteDrawing(drawing.id)"
                                     :class="{'drop-target-active': isConteDropTarget === drawing.id}">
@@ -629,7 +629,7 @@
                         </div>
                     </div>
 
-                    <div class="w-[280px] bg-gray-900 overflow-y-auto p-0 border-l border-gray-800 flex flex-col shadow-2xl z-20"
+                    <div class="conte-sidebar w-[280px] bg-gray-900 overflow-y-auto p-0 border-l border-gray-800 flex flex-col shadow-2xl z-20"
                         @dragover.prevent="dragOverConteScript('unassigned')" @drop.stop="dropOnConteUnassigned"
                         :class="{'drop-target-active': isConteDropTarget === 'unassigned'}">
 
@@ -796,6 +796,29 @@
             </div>
         </main>
     </div>
+    <!-- Core -->
+    <script src="js/core/state.js"></script>
+    <script src="js/core/helpers.js"></script>
+    <script src="js/core/computed.js"></script>
+    <script src="js/core/history.js"></script>
+
+    <!-- Mode: Conte (canvas must load before page-ops, drag, layout) -->
+    <script src="js/mode/conte/canvas.js"></script>
+    <script src="js/mode/conte/drag.js"></script>
+
+    <!-- Mode: Plot -->
+    <script src="js/mode/plot/drag.js"></script>
+
+    <!-- Mode: Name -->
+    <script src="js/mode/name/layout.js"></script>
+
+    <!-- Ops -->
+    <script src="js/ops/page-ops.js"></script>
+    <script src="js/ops/keyboard.js"></script>
+    <script src="js/ops/project-io.js"></script>
+    <script src="js/ops/export.js"></script>
+
+    <!-- Orchestrator -->
     <script src="script.js"></script>
 </body>
 
