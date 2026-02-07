@@ -290,24 +290,23 @@
         @media (max-width: 768px) {
 
             /* メインエリアの設定 */
-            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex {
+            .conte-body {
                 display: block;
                 position: relative;
             }
 
-            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex>div.flex-1 {
+            .conte-panel-area {
                 width: 100%;
                 height: 100%;
                 overflow-y: auto;
                 padding-bottom: 220px;
                 border-right: none;
                 padding-left: 10px;
-                /* 左右に余白を追加 */
                 padding-right: 10px;
             }
 
             /* 未割り当てリスト（下部固定） */
-            #app>main>div.h-full.flex.flex-col.bg-gray-900>div.flex-1.overflow-hidden.flex>div.w-\[280px\] {
+            .conte-sidebar {
                 position: fixed;
                 bottom: 0;
                 left: 0;
@@ -322,17 +321,14 @@
             }
 
             /* コマ（カード）のコンテナ */
-            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.border.border-gray-600.flex.flex-row {
+            .conte-card {
                 margin-bottom: 24px !important;
-                /* コマ間のスペース */
                 height: 160px;
-                /*高さを少し抑える*/
             }
 
-            /* 左側の画像エリア：幅を固定（例えば画面の40%程度） */
-            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:first-child {
+            /* 左側の画像エリア */
+            .conte-card-image {
                 width: 140px !important;
-                /* スマホで見やすい固定幅 */
                 flex-shrink: 0;
                 border-right: 1px solid #4b5563;
                 display: flex;
@@ -340,7 +336,7 @@
             }
 
             /* 画像表示部分（キャンバスプレビュー） */
-            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:first-child>div.relative {
+            .conte-card-preview {
                 width: 100% !important;
                 height: 100% !important;
                 background-color: #ffffff;
@@ -354,10 +350,9 @@
             }
 
             /* 右側のセリフエリア */
-            .bg-gray-900.rounded-lg.shadow-xl.overflow-hidden.flex-row>div:last-child {
+            .conte-card-scripts {
                 flex: 1;
                 min-width: 0;
-                /* 文字がはみ出さないように */
                 overflow-y: auto;
             }
         }
