@@ -1,4 +1,4 @@
-// js/drag-plot.js - Plot drag & drop
+// js/mode/plot/drag.js - Plot drag & drop
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createDragPlot = function (deps) {

@@ -1,4 +1,4 @@
-// js/state.js - All reactive state definitions
+// js/core/state.js - All reactive state definitions
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createState = function (deps) {

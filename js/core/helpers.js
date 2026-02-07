@@ -1,4 +1,4 @@
-// js/helpers.js - Coordinate helpers, guide calculation, textarea resize, etc.
+// js/core/helpers.js - Coordinate helpers, guide calculation, textarea resize, etc.
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createHelpers = function (deps) {

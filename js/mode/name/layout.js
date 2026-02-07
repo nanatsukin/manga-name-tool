@@ -1,4 +1,4 @@
-// js/layout.js - Layout operations + auto layout
+// js/mode/name/layout.js - Layout operations + auto layout
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createLayout = function (deps) {

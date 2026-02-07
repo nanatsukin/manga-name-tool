@@ -1,4 +1,4 @@
-// js/computed.js - Computed properties
+// js/core/computed.js - Computed properties
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createComputed = function (deps) {

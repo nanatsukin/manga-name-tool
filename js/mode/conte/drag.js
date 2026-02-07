@@ -1,4 +1,4 @@
-// js/drag-conte.js - Conte drag & drop (drawings + scripts)
+// js/mode/conte/drag.js - Conte drag & drop (drawings + scripts)
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createDragConte = function (deps) {

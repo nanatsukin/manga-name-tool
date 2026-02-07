@@ -38,10 +38,13 @@ createApp({
             state, helpers, history, canvas, computed: computedProps
         });
 
-        // --- 10. File I/O ---
-        const fileIO = window.MangaApp.createFileIO({ Vue: VueDeps.Vue, state, helpers, canvas });
+        // --- 10. Project I/O ---
+        const projectIO = window.MangaApp.createProjectIO({ Vue: VueDeps.Vue, state, helpers, canvas });
 
-        // --- 11. Keyboard ---
+        // --- 11. Export ---
+        const exporter = window.MangaApp.createExport({ Vue: VueDeps.Vue, state, helpers, canvas });
+
+        // --- 12. Keyboard ---
         const keyboard = window.MangaApp.createKeyboard({ Vue: VueDeps.Vue, state, helpers });
 
         // --- Watchers ---
@@ -244,14 +247,16 @@ createApp({
             moveDrawingPage: layout.moveDrawingPage,
             autoLayoutCurrentPage: layout.autoLayoutCurrentPage,
 
-            // File I/O
-            saveProject: fileIO.saveProject,
-            saveProjectAs: fileIO.saveProjectAs,
-            loadProjectFromFile: fileIO.loadProjectFromFile,
-            handleFileChange: fileIO.handleFileChange,
-            openExportModal: fileIO.openExportModal,
-            executeExport: fileIO.executeExport,
-            exportData: fileIO.exportData,
+            // Project I/O
+            saveProject: projectIO.saveProject,
+            saveProjectAs: projectIO.saveProjectAs,
+            loadProjectFromFile: projectIO.loadProjectFromFile,
+            handleFileChange: projectIO.handleFileChange,
+
+            // Export
+            openExportModal: exporter.openExportModal,
+            executeExport: exporter.executeExport,
+            exportData: exporter.exportData,
 
             // Keyboard
             handleScriptTextKeydown: keyboard.handleScriptTextKeydown,

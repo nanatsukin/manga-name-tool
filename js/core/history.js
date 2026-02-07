@@ -1,4 +1,4 @@
-// js/history.js - Name mode history + drawing canvas history
+// js/core/history.js - Name mode history + drawing canvas history
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createHistory = function (deps) {

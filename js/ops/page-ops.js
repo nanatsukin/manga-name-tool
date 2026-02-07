@@ -1,4 +1,4 @@
-// js/page-ops.js - Page/script CRUD, mode switching, navigation
+// js/ops/page-ops.js - Page/script CRUD, mode switching, navigation
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createPageOps = function (deps) {

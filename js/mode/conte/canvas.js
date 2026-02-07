@@ -1,4 +1,4 @@
-// js/canvas.js - Canvas drawing, modal, save/restore
+// js/mode/conte/canvas.js - Canvas drawing, modal, save/restore
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createCanvas = function (deps) {

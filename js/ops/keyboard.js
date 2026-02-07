@@ -1,4 +1,4 @@
-// js/keyboard.js - Keyboard handlers, text split/merge
+// js/ops/keyboard.js - Keyboard handlers, text split/merge
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createKeyboard = function (deps) {

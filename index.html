@@ -796,17 +796,29 @@
             </div>
         </main>
     </div>
-    <script src="js/state.js"></script>
-    <script src="js/helpers.js"></script>
-    <script src="js/computed.js"></script>
-    <script src="js/history.js"></script>
-    <script src="js/canvas.js"></script>
-    <script src="js/page-ops.js"></script>
-    <script src="js/drag-plot.js"></script>
-    <script src="js/drag-conte.js"></script>
-    <script src="js/layout.js"></script>
-    <script src="js/file-io.js"></script>
-    <script src="js/keyboard.js"></script>
+    <!-- Core -->
+    <script src="js/core/state.js"></script>
+    <script src="js/core/helpers.js"></script>
+    <script src="js/core/computed.js"></script>
+    <script src="js/core/history.js"></script>
+
+    <!-- Mode: Conte (canvas must load before page-ops, drag, layout) -->
+    <script src="js/mode/conte/canvas.js"></script>
+    <script src="js/mode/conte/drag.js"></script>
+
+    <!-- Mode: Plot -->
+    <script src="js/mode/plot/drag.js"></script>
+
+    <!-- Mode: Name -->
+    <script src="js/mode/name/layout.js"></script>
+
+    <!-- Ops -->
+    <script src="js/ops/page-ops.js"></script>
+    <script src="js/ops/keyboard.js"></script>
+    <script src="js/ops/project-io.js"></script>
+    <script src="js/ops/export.js"></script>
+
+    <!-- Orchestrator -->
     <script src="script.js"></script>
 </body>
 
