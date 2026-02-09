@@ -1,0 +1,23 @@
+{
+  "name": "manganametool",
+  "version": "1.0.0",
+  "description": "漫画制作のワークフロー（プロット → コンテ → ネーム）をブラウザ上で一貫して行えるWebアプリケーションです。",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nanatsukin/NameTool.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nanatsukin/NameTool/issues"
+  },
+  "homepage": "https://github.com/nanatsukin/NameTool#readme",
+  "devDependencies": {
+    "vitest": "^1.6.1"
+  }
+}
