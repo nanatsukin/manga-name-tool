@@ -8,6 +8,8 @@ window.MangaApp.createLayout = function (deps) {
     const historyStore = deps.historyStore;
     const helpers = deps.helpers;
     const canvas = deps.canvas;
+    const layoutUtils = deps.layoutUtils;
+    const dndUtils = deps.dndUtils;
 
     // Layout interaction state
     let interactTarget = null;
@@ -27,8 +29,7 @@ window.MangaApp.createLayout = function (deps) {
         if (uiStore.isImageEditMode && item.inner) {
             startValX = item.inner.x || 0;
             startValY = item.inner.y || 0;
-            document.addEventListener('mousemove', onImageDrag);
-            document.addEventListener('touchmove', onImageDrag, { passive: false });
+            dndUtils.addPointerListeners(onImageDrag, stopInteract);
         } else {
             startValX = item.layout.x;
             startValY = item.layout.y;
@@ -38,11 +39,8 @@ window.MangaApp.createLayout = function (deps) {
                 const scripts = page.scripts.filter(s => s.drawingId === item.id);
                 linkedItems = scripts.map(s => ({ item: s, startX: s.layout.x, startY: s.layout.y }));
             }
-            document.addEventListener('mousemove', onLayoutDrag);
-            document.addEventListener('touchmove', onLayoutDrag, { passive: false });
+            dndUtils.addPointerListeners(onLayoutDrag, stopInteract);
         }
-        document.addEventListener('mouseup', stopInteract);
-        document.addEventListener('touchend', stopInteract);
     };
 
     const onLayoutDrag = (e) => {
@@ -108,10 +106,7 @@ window.MangaApp.createLayout = function (deps) {
         startH = item.layout.h;
         e.stopPropagation();
 
-        document.addEventListener('mousemove', onLayoutResize);
-        document.addEventListener('touchmove', onLayoutResize, { passive: false });
-        document.addEventListener('mouseup', stopInteract);
-        document.addEventListener('touchend', stopInteract);
+        dndUtils.addPointerListeners(onLayoutResize, stopInteract);
     };
 
     const onLayoutResize = (e) => {
@@ -139,14 +134,7 @@ window.MangaApp.createLayout = function (deps) {
     const stopInteract = () => {
         const wasInteracting = !!interactTarget;
         interactTarget = null;
-        document.removeEventListener('mousemove', onLayoutDrag);
-        document.removeEventListener('touchmove', onLayoutDrag);
-        document.removeEventListener('mousemove', onImageDrag);
-        document.removeEventListener('touchmove', onImageDrag);
-        document.removeEventListener('mousemove', onLayoutResize);
-        document.removeEventListener('touchmove', onLayoutResize);
-        document.removeEventListener('mouseup', stopInteract);
-        document.removeEventListener('touchend', stopInteract);
+        dndUtils.removePointerListeners([onLayoutDrag, onImageDrag, onLayoutResize], stopInteract);
 
         if (pageStore.currentMode === 'name' && wasInteracting) {
             historyStore.recordNameHistory();
@@ -189,16 +177,7 @@ window.MangaApp.createLayout = function (deps) {
 
         if (!page) return;
 
-        const fx = (config.canvasW - config.finishW) / 2;
-        const fy = (config.canvasH - config.finishH) / 2;
-        const isRightPage = (pIdx === 0) || (pIdx % 2 !== 0);
-        const si = isRightPage ? config.safeInside : config.safeOutside;
-        const so = isRightPage ? config.safeOutside : config.safeInside;
-
-        const safeX = (fx + si) * scale;
-        const safeY = (fy + config.safeTop) * scale;
-        const safeW = (config.finishW - si - so) * scale;
-        const safeH = (config.finishH - config.safeTop - config.safeBottom) * scale;
+        const { safeX, safeY, safeW, safeH } = layoutUtils.getSafeArea(config, pIdx, scale);
 
         const panelMargin = 20;
         let currentY = safeY;

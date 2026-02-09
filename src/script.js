@@ -20,19 +20,29 @@ const app = createApp({
         uiStore.setConfigStore(configStore);
         historyStore.setStores(pageStore, uiStore);
 
+        // --- Composables (pure functions, no factory needed) ---
+        const canvasUtils = window.MangaApp.canvasUtils;
+        const dndUtils = window.MangaApp.dndUtils;
+        const layoutUtils = window.MangaApp.layoutUtils;
+        const exportUtils = window.MangaApp.exportUtils;
+        const autoSaveUtils = window.MangaApp.autoSaveUtils;
+
+        // Inject canvasUtils into historyStore
+        historyStore.setCanvasUtils(canvasUtils);
+
         // --- 2. Helpers ---
         const helpers = window.MangaApp.createHelpers({
-            Vue: VueDeps.Vue, pageStore, configStore, uiStore, addScript: null
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, addScript: null
         });
 
         // --- 3. Canvas ---
         const canvas = window.MangaApp.createCanvas({
-            Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers
+            Vue: VueDeps.Vue, pageStore, uiStore, historyStore, helpers, canvasUtils
         });
 
         // --- 4. Page Operations ---
         const pageOps = window.MangaApp.createPageOps({
-            Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers, canvas
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers, canvas, canvasUtils, dndUtils
         });
 
         // Wire up late dependency: helpers.focusNext needs addScript
@@ -42,21 +52,21 @@ const app = createApp({
         const dragPlot = window.MangaApp.createDragPlot({ pageStore, uiStore });
 
         // --- 6. Drag Conte ---
-        const dragConte = window.MangaApp.createDragConte({ pageStore, uiStore, canvas });
+        const dragConte = window.MangaApp.createDragConte({ pageStore, uiStore, canvas, canvasUtils, dndUtils });
 
         // --- 7. Layout ---
         const layout = window.MangaApp.createLayout({
-            pageStore, configStore, uiStore, historyStore, helpers, canvas
+            pageStore, configStore, uiStore, historyStore, helpers, canvas, layoutUtils, dndUtils
         });
 
         // --- 8. Project I/O ---
         const projectIO = window.MangaApp.createProjectIO({
-            Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas, canvasUtils, autoSaveUtils
         });
 
         // --- 9. Export ---
         const exporter = window.MangaApp.createExport({
-            Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, exportUtils
         });
 
         // --- 10. Keyboard ---
@@ -77,7 +87,7 @@ const app = createApp({
         watch([pages, pageConfig], () => {
             if (uiStore.isRestoring) return;
             clearTimeout(uiStore.autoSaveTimer);
-            uiStore.autoSaveTimer = setTimeout(canvas.autoSaveToIDB, 2000);
+            uiStore.autoSaveTimer = setTimeout(() => autoSaveUtils.autoSaveToIDB(pageStore, configStore, uiStore), 2000);
         }, { deep: true });
 
         watch(displayW, () => uiStore.checkScreenSize());
@@ -85,33 +95,10 @@ const app = createApp({
         // --- Lifecycle ---
         onMounted(async () => {
             try {
-                const savedData = await get('manga_project_autosave');
-                if (savedData && confirm('前回の作業データを復元しますか？')) {
-                    uiStore.isProcessing = true;
-                    if (savedData.pages) {
-                        for (const page of savedData.pages) {
-                            for (const drawing of page.drawings) {
-                                if (drawing.imgBlob) {
-                                    drawing.imgSrc = URL.createObjectURL(drawing.imgBlob);
-                                    drawing.cachedBlob = drawing.imgBlob;
-                                    delete drawing.imgBlob;
-                                }
-                                drawing.history = [];
-                                drawing.historyStep = -1;
-                            }
-                        }
-                        pageStore.pages = savedData.pages;
-                    }
-                    if (savedData.config) configStore.pageConfig = savedData.config;
-
-                    await nextTick();
-
-                    pageStore.pages.forEach(p => p.drawings.forEach(d => {
-                        if (d.imgSrc) { d.history = [d.imgSrc]; d.historyStep = 0; }
-                    }));
-                    helpers.resizeTextareas();
-
-                } else {
+                const restored = await autoSaveUtils.restoreFromIDB(
+                    pageStore, configStore, uiStore, canvasUtils, helpers, nextTick
+                );
+                if (!restored) {
                     if (pageStore.pages[0].drawings[0]) historyStore.saveHistory(pageStore.pages[0].drawings[0]);
                     nextTick(() => helpers.resizeTextareas());
                 }

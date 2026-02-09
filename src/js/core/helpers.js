@@ -6,6 +6,7 @@ window.MangaApp.createHelpers = function (deps) {
     const pageStore = deps.pageStore;
     const configStore = deps.configStore;
     const uiStore = deps.uiStore;
+    const layoutUtils = deps.layoutUtils;
 
     // Touch / mouse coordinate helper
     const getClientPos = (e) => {
@@ -17,18 +18,9 @@ window.MangaApp.createHelpers = function (deps) {
 
     // Guide drawing coordinate calculation
     const guideProps = (pageIndex) => {
-        const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = configStore.pageConfig;
+        const { canvasW, canvasH, finishW, finishH, bleed, scale } = configStore.pageConfig;
 
-        const fx = (canvasW - finishW) / 2;
-        const fy = (canvasH - finishH) / 2;
-        const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
-        const si = isRight ? safeInside : safeOutside;
-        const so = isRight ? safeOutside : safeInside;
-
-        const safeX = (fx + si) * scale;
-        const safeY = (fy + safeTop) * scale;
-        const safeW = (finishW - si - so) * scale;
-        const safeH = (finishH - safeTop - safeBottom) * scale;
+        const { safeX, safeY, safeW, safeH, fx, fy } = layoutUtils.getSafeArea(configStore.pageConfig, pageIndex, scale);
 
         const finishX = fx * scale;
         const finishY = fy * scale;

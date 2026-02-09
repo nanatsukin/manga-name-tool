@@ -4,10 +4,10 @@ window.MangaApp = window.MangaApp || {};
 window.MangaApp.createCanvas = function (deps) {
     const { nextTick } = deps.Vue;
     const pageStore = deps.pageStore;
-    const configStore = deps.configStore;
     const uiStore = deps.uiStore;
     const historyStore = deps.historyStore;
     const helpers = deps.helpers;
+    const canvasUtils = deps.canvasUtils;
 
     // Save all canvases
     const saveAllCanvases = async () => {
@@ -15,20 +15,7 @@ window.MangaApp.createCanvas = function (deps) {
         pageStore.pages.forEach(page => {
             page.drawings.forEach(d => {
                 const cvs = uiStore.canvasRefs[d.id];
-                if (cvs) {
-                    const p = new Promise(resolve => {
-                        cvs.toBlob(blob => {
-                            const isUsedInHistory = d.history && d.history.includes(d.imgSrc);
-                            if (d.imgSrc && d.imgSrc.startsWith('blob:') && !isUsedInHistory) {
-                                URL.revokeObjectURL(d.imgSrc);
-                            }
-                            d.imgSrc = URL.createObjectURL(blob);
-                            d.cachedBlob = blob;
-                            resolve();
-                        });
-                    });
-                    promises.push(p);
-                }
+                if (cvs) promises.push(canvasUtils.saveDrawingBlob(cvs, d));
             });
         });
         await Promise.all(promises);
@@ -88,16 +75,7 @@ window.MangaApp.createCanvas = function (deps) {
 
         if (drawing && canvas) {
             canvas.toBlob(blob => {
-                const url = URL.createObjectURL(blob);
-                if (!drawing.history) drawing.history = [];
-                if (drawing.historyStep === undefined) drawing.historyStep = -1;
-                if (drawing.historyStep < drawing.history.length - 1) {
-                    drawing.history = drawing.history.slice(0, drawing.historyStep + 1);
-                }
-                drawing.history.push(url);
-                drawing.historyStep++;
-                drawing.imgSrc = url;
-                drawing.cachedBlob = blob;
+                canvasUtils.pushDrawingHistory(drawing, blob);
                 uiStore.showDrawingModal = false;
                 uiStore.currentEditingDrawing = null;
             });
@@ -179,42 +157,10 @@ window.MangaApp.createCanvas = function (deps) {
         }
     };
 
-    // IDB auto-save
-    const autoSaveToIDB = async () => {
-        if (uiStore.isRestoring) return;
-        uiStore.saveStatus = 'saving';
-        try {
-            const dataToSave = { pages: JSON.parse(JSON.stringify(pageStore.pages)), config: JSON.parse(JSON.stringify(configStore.pageConfig)) };
-            await Promise.all(dataToSave.pages.map(async (page, pIdx) => {
-                await Promise.all(page.drawings.map(async (d, dIdx) => {
-                    delete d.history; delete d.historyStep;
-                    const originalDrawing = pageStore.pages[pIdx].drawings[dIdx];
-                    const originalImgSrc = originalDrawing.imgSrc;
-                    if (originalDrawing.cachedBlob) {
-                        d.imgBlob = originalDrawing.cachedBlob;
-                        delete d.imgSrc; delete d.cachedBlob;
-                    } else if (originalImgSrc) {
-                        try {
-                            const res = await fetch(originalImgSrc);
-                            d.imgBlob = await res.blob();
-                            originalDrawing.cachedBlob = d.imgBlob;
-                            delete d.imgSrc;
-                        } catch (e) { }
-                    }
-                }));
-            }));
-            await idbKeyval.set('manga_project_autosave', dataToSave);
-            uiStore.saveStatus = 'saved';
-        } catch (e) {
-            console.error(e);
-            uiStore.saveStatus = 'error';
-        }
-    };
-
     return {
         saveAllCanvases, restoreAllCanvases,
         openDrawingModal, closeDrawingModal,
         startDraw, draw, stopDraw, clearCurrentPageCanvas,
-        handleGlobalKeydown, autoSaveToIDB
+        handleGlobalKeydown
     };
 };

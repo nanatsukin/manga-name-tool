@@ -9,6 +9,8 @@ window.MangaApp.createPageOps = function (deps) {
     const historyStore = deps.historyStore;
     const helpers = deps.helpers;
     const canvas = deps.canvas;
+    const canvasUtils = deps.canvasUtils;
+    const dndUtils = deps.dndUtils;
 
     // Mode switching
     const changeMode = async (mode) => {
@@ -115,8 +117,7 @@ window.MangaApp.createPageOps = function (deps) {
         const scripts = pageStore.pages[pIndex].scripts;
         const targetIndex = sIndex + dir;
         if (targetIndex >= 0 && targetIndex < scripts.length) {
-            const item = scripts.splice(sIndex, 1)[0];
-            scripts.splice(targetIndex, 0, item);
+            dndUtils.arrayMove(scripts, sIndex, targetIndex);
             nextTick(() => helpers.resizeTextareas());
         }
     };
@@ -187,10 +188,9 @@ window.MangaApp.createPageOps = function (deps) {
             id: Date.now() + Math.random(),
             imgSrc: null,
             layout: { x: 50, y: 50, w: 300, h: 200, z: 1 },
-            inner: { scale: 1, x: 0, y: 0 },
-            history: [],
-            historyStep: -1
+            inner: { scale: 1, x: 0, y: 0 }
         };
+        canvasUtils.initDrawingHistory(newDrawing);
         pageStore.pages[targetIdx].drawings.push(newDrawing);
         nextTick(() => historyStore.saveHistory(newDrawing));
     };

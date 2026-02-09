@@ -26,6 +26,9 @@ describe('page-ops', () => {
         // Mock confirm to always return true
         vi.stubGlobal('confirm', () => true);
 
+        loadModule('src/js/composables/layout.js');
+        loadModule('src/js/composables/drag-and-drop.js');
+        loadModule('src/js/composables/canvas.js');
         loadModule('src/js/core/helpers.js');
         loadModule('src/js/ops/page-ops.js');
 
@@ -49,6 +52,7 @@ describe('page-ops', () => {
         const helpers = window.MangaApp.createHelpers({
             Vue: { nextTick: mockNextTick },
             pageStore, configStore, uiStore,
+            layoutUtils: window.MangaApp.layoutUtils,
             addScript: null,
         });
 
@@ -61,6 +65,8 @@ describe('page-ops', () => {
             Vue: { nextTick: mockNextTick },
             pageStore, configStore, uiStore, historyStore,
             helpers, canvas: mockCanvas,
+            canvasUtils: window.MangaApp.canvasUtils,
+            dndUtils: window.MangaApp.dndUtils,
         });
     });
 

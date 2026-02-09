@@ -8,21 +8,14 @@ window.MangaApp.createProjectIO = function (deps) {
     const uiStore = deps.uiStore;
     const helpers = deps.helpers;
     const canvas = deps.canvas;
-
-    // Blob to Base64
-    const blobToBase64 = (blob) => {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
-            reader.readAsDataURL(blob);
-        });
-    };
+    const canvasUtils = deps.canvasUtils;
+    const autoSaveUtils = deps.autoSaveUtils;
 
     // Create export JSON data
     const createExportData = async () => {
         if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
         const exportData = {
-            pages: JSON.parse(JSON.stringify(pageStore.pages)),
+            pages: autoSaveUtils.deepClone(pageStore.pages),
             config: configStore.pageConfig
         };
         for (const page of exportData.pages) {
@@ -36,7 +29,7 @@ window.MangaApp.createProjectIO = function (deps) {
                         try {
                             const response = await fetch(liveDrawing.imgSrc);
                             const blob = await response.blob();
-                            drawing.imgSrc = await blobToBase64(blob);
+                            drawing.imgSrc = await autoSaveUtils.blobToBase64(blob);
                         } catch (e) { console.error(e); }
                     }
                 }
@@ -150,8 +143,7 @@ window.MangaApp.createProjectIO = function (deps) {
                         drawing.imgSrc = URL.createObjectURL(blob);
                         drawing.cachedBlob = blob;
                     }
-                    drawing.history = drawing.imgSrc ? [drawing.imgSrc] : [];
-                    drawing.historyStep = drawing.imgSrc ? 0 : -1;
+                    canvasUtils.initDrawingHistory(drawing);
                 }
             }
 

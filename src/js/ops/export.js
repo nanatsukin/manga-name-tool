@@ -6,6 +6,8 @@ window.MangaApp.createExport = function (deps) {
     const pageStore = deps.pageStore;
     const configStore = deps.configStore;
     const uiStore = deps.uiStore;
+    const layoutUtils = deps.layoutUtils;
+    const exportUtils = deps.exportUtils;
 
     // Export modal
     const openExportModal = () => {
@@ -28,16 +30,9 @@ window.MangaApp.createExport = function (deps) {
 
         const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
 
-        let targetPageIndices = [];
-        if (settings.rangeType === 'current') {
-            targetPageIndices = [pageStore.activePageIndex];
-        } else if (settings.rangeType === 'custom') {
-            const start = Math.max(0, (settings.rangeStart || 1) - 1);
-            const end = Math.min(pageStore.pages.length - 1, (settings.rangeEnd || 1) - 1);
-            for (let i = start; i <= end; i++) targetPageIndices.push(i);
-        } else {
-            targetPageIndices = pageStore.pages.map((_, i) => i);
-        }
+        const targetPageIndices = exportUtils.getTargetPageIndices(
+            settings, pageStore.pages.length, pageStore.activePageIndex
+        );
 
         if (targetPageIndices.length === 0) {
             alert('出力対象のページがありません');
@@ -91,26 +86,15 @@ window.MangaApp.createExport = function (deps) {
                 const canvasW = configStore.pageConfig.canvasW;
                 const canvasH = configStore.pageConfig.canvasH;
                 const scale = configStore.pageConfig.scale;
-                const domW = el.clientWidth;
-                const ratio = canvasW / domW;
                 const pageNum = el.id.replace('render-page-', '');
                 const pageIndex = parseInt(pageNum);
 
                 if (!targetPageIndices.includes(pageIndex)) continue;
 
                 if (format === 'png') {
-                    const dataUrl = await htmlToImage.toPng(el, {
-                        width: canvasW,
-                        height: canvasH,
-                        style: {
-                            transform: `scale(${ratio})`,
-                            transformOrigin: 'top left',
-                            width: `${domW}px`,
-                            height: `${el.clientHeight}px`,
-                            margin: 0
-                        },
-                        filter: (node) => (node.id !== 'font-awesome')
-                    });
+                    const dataUrl = await htmlToImage.toPng(el,
+                        exportUtils.createHtmlToImageOptions(el, canvasW, canvasH)
+                    );
 
                     const blob = await (await fetch(dataUrl)).blob();
                     const fileName = `page_${String(pageIndex + 1).padStart(3, '0')}.png`;
@@ -123,19 +107,9 @@ window.MangaApp.createExport = function (deps) {
                         zip.file(fileName, blob);
                     }
                 } else if (format === 'psd') {
-                    const textDataUrl = await htmlToImage.toPng(el, {
-                        width: canvasW,
-                        height: canvasH,
-                        style: {
-                            transform: `scale(${ratio})`,
-                            transformOrigin: 'top left',
-                            width: `${domW}px`,
-                            height: `${el.clientHeight}px`,
-                            margin: 0,
-                            backgroundColor: 'rgba(0,0,0,0)'
-                        },
-                        filter: (node) => (node.id !== 'font-awesome')
-                    });
+                    const textDataUrl = await htmlToImage.toPng(el,
+                        exportUtils.createHtmlToImageOptions(el, canvasW, canvasH, true)
+                    );
 
                     const textImg = new Image();
                     textImg.src = textDataUrl;
@@ -196,18 +170,14 @@ window.MangaApp.createExport = function (deps) {
                     guideCanvas.height = canvasH;
                     const gCtx = guideCanvas.getContext('2d');
 
-                    const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = configStore.pageConfig;
-                    const fx = (canvasW - finishW) / 2;
-                    const fy = (canvasH - finishH) / 2;
+                    const { finishW, finishH, bleed } = configStore.pageConfig;
+                    const { safeX: sX, safeY: sY, safeW: sW, safeH: sH, fx, fy } = layoutUtils.getSafeArea(configStore.pageConfig, pageIndex);
 
                     gCtx.strokeStyle = "rgba(136, 146, 230, 0.8)";
                     gCtx.lineWidth = 1;
                     gCtx.strokeRect(fx, fy, finishW, finishH);
 
-                    const isRight = (pageIndex === 0) || (pageIndex % 2 !== 0);
-                    const si = isRight ? safeInside : safeOutside;
-                    const so = isRight ? safeOutside : safeInside;
-                    gCtx.strokeRect(fx + si, fy + safeTop, finishW - si - so, finishH - safeTop - safeBottom);
+                    gCtx.strokeRect(sX, sY, sW, sH);
 
                     const bx = fx - bleed;
                     const by = fy - bleed;

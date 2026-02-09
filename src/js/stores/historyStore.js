@@ -8,9 +8,13 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
     // Cross-store dependencies (injected via setStores)
     let _pageStore = null;
     let _uiStore = null;
+    let _canvasUtils = null;
     const setStores = (pageStore, uiStore) => {
         _pageStore = pageStore;
         _uiStore = uiStore;
+    };
+    const setCanvasUtils = (canvasUtils) => {
+        _canvasUtils = canvasUtils;
     };
 
     // --- Name mode history ---
@@ -67,18 +71,7 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
         if (!canvas) return;
 
         canvas.toBlob(blob => {
-            const url = URL.createObjectURL(blob);
-            if (!drawing.history) drawing.history = [];
-            if (drawing.historyStep === undefined) drawing.historyStep = -1;
-
-            if (drawing.historyStep < drawing.history.length - 1) {
-                drawing.history = drawing.history.slice(0, drawing.historyStep + 1);
-            }
-
-            drawing.history.push(url);
-            drawing.historyStep++;
-            drawing.imgSrc = url;
-            drawing.cachedBlob = blob;
+            _canvasUtils.pushDrawingHistory(drawing, blob);
 
             if (_uiStore.showDrawingModal && _uiStore.currentEditingDrawing?.id === drawing.id) {
                 _uiStore.currentEditingDrawing = { ...drawing };
@@ -129,7 +122,7 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
 
     return {
         nameHistory, nameHistoryIndex,
-        setStores,
+        setStores, setCanvasUtils,
         recordNameHistory, undoName, redoName, resetNameHistory,
         saveHistory, drawToCanvas, undo, redo, canUndo, canRedo
     };

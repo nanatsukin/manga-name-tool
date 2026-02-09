@@ -5,6 +5,8 @@ window.MangaApp.createDragConte = function (deps) {
     const pageStore = deps.pageStore;
     const uiStore = deps.uiStore;
     const canvas = deps.canvas;
+    const canvasUtils = deps.canvasUtils;
+    const dndUtils = deps.dndUtils;
 
     // Drawing drag handle
     const onHandleDown = () => { uiStore.isDrawingDragReady = true; };
@@ -38,23 +40,11 @@ window.MangaApp.createDragConte = function (deps) {
         const page = pageStore.pages[pageStore.activePageIndex];
         await Promise.all(page.drawings.map(d => {
             const cvs = uiStore.canvasRefs[d.id];
-            if (cvs) {
-                return new Promise(resolve => {
-                    cvs.toBlob(blob => {
-                        const isUsedInHistory = d.history && d.history.includes(d.imgSrc);
-                        if (d.imgSrc && d.imgSrc.startsWith('blob:') && !isUsedInHistory) URL.revokeObjectURL(d.imgSrc);
-                        d.imgSrc = URL.createObjectURL(blob);
-                        d.cachedBlob = blob;
-                        resolve();
-                    });
-                });
-            }
+            if (cvs) return canvasUtils.saveDrawingBlob(cvs, d);
             return Promise.resolve();
         }));
 
-        const drawings = pageStore.pages[pageStore.activePageIndex].drawings;
-        const item = drawings.splice(srcIdx, 1)[0];
-        drawings.splice(targetIdx, 0, item);
+        dndUtils.arrayMove(page.drawings, srcIdx, targetIdx);
 
         dragEndDrawing();
         canvas.restoreAllCanvases();

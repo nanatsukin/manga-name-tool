@@ -15,6 +15,7 @@ describe('helpers', () => {
     };
 
     beforeEach(() => {
+        loadModule('src/js/composables/layout.js');
         loadModule('src/js/core/helpers.js');
         pageStore = createMockPageStore();
         configStore = createMockConfigStore({ pageConfig: { ...defaultConfig } });
@@ -22,6 +23,7 @@ describe('helpers', () => {
         helpers = window.MangaApp.createHelpers({
             Vue: { nextTick: mockNextTick },
             pageStore, configStore, uiStore,
+            layoutUtils: window.MangaApp.layoutUtils,
             addScript: null,
         });
     });
