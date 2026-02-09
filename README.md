@@ -31,6 +31,7 @@
 ビルドツール不要のシンプルな構成です。`index.html` をブラウザで開くだけで動作します。
 
 - **Vue 3** (CDN) - リアクティブUI
+- **Pinia** (CDN) - 状態管理
 - **Tailwind CSS** (CDN) - スタイリング
 - **html-to-image** - ページのPNG書き出し
 - **ag-psd** - PSD形式書き出し
@@ -40,26 +41,24 @@
 ## ファイル構成
 
 ```
-index.html        … メインHTML（テンプレート）
-style.css         … カスタムスタイル
-script.js         … オーケストレーター（モジュール結合・ウォッチャー）
-js/
-  state.js        … リアクティブ状態管理
-  helpers.js      … ユーティリティ関数
-  computed.js     … 算出プロパティ
-  history.js      … Undo/Redo
-  canvas.js       … 描画キャンバス操作
-  page-ops.js     … ページ・セリフ操作
-  drag-plot.js    … プロットモードのドラッグ&ドロップ
-  drag-conte.js   … コンテモードのドラッグ&ドロップ
-  layout.js       … ネームモードのレイアウト操作
-  file-io.js      … ファイル保存・読込・書き出し
-  keyboard.js     … キーボードショートカット
+src/
+  index.html        … メインHTML（テンプレート）
+  style.css         … カスタムスタイル
+  script.js         … オーケストレーター（モジュール結合・ウォッチャー）
+  js/
+    stores/          … Pinia ストア（状態管理を4ドメインに分割）
+    core/            … 基盤モジュール（ユーティリティ）
+    mode/
+      plot/          … プロットモード（セリフD&D）
+      conte/         … コンテモード（描画キャンバス・コマD&D）
+      name/          … ネームモード（コマ・セリフ配置）
+    ops/             … 横断的操作（ページ操作・キーボード・保存/読込・書出し）
+tests/               … テストコード（Vitest）
 ```
 
 ## 使い方
 
-1. `index.html` をブラウザで開く
+1. `src/index.html` をブラウザで開く
 2. **プロット**モードでセリフ・ト書きを入力
 3. **コンテ**モードでコマを作成し、絵コンテを描いてセリフを割り当て
 4. **ネーム**モードでコマとセリフを原稿上に配置
@@ -69,6 +68,13 @@ js/
 
 モダンブラウザ（Chrome, Edge, Firefox, Safari）で動作します。
 File System Access API に対応したブラウザ（Chrome, Edge）では上書き保存が利用できます。
+
+## テスト
+
+```bash
+npm install       # 初回のみ
+npm test          # テスト実行
+```
 
 ## ライセンス
 
