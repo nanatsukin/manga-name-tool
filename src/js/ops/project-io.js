@@ -3,7 +3,9 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createProjectIO = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
     const helpers = deps.helpers;
     const canvas = deps.canvas;
 
@@ -18,17 +20,17 @@ window.MangaApp.createProjectIO = function (deps) {
 
     // Create export JSON data
     const createExportData = async () => {
-        if (state.currentMode.value === 'conte') await canvas.saveAllCanvases();
+        if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
         const exportData = {
-            pages: JSON.parse(JSON.stringify(state.pages.value)),
-            config: state.pageConfig.value
+            pages: JSON.parse(JSON.stringify(pageStore.pages)),
+            config: configStore.pageConfig
         };
         for (const page of exportData.pages) {
             for (const drawing of page.drawings) {
                 delete drawing.history;
                 delete drawing.historyStep;
                 if (drawing.imgSrc) {
-                    const livePage = state.pages.value.find(p => p.id === page.id);
+                    const livePage = pageStore.pages.find(p => p.id === page.id);
                     const liveDrawing = livePage.drawings.find(d => d.id === drawing.id);
                     if (liveDrawing && liveDrawing.imgSrc) {
                         try {
@@ -45,15 +47,15 @@ window.MangaApp.createProjectIO = function (deps) {
 
     // Save (overwrite)
     const saveProject = async () => {
-        if (!state.currentFileHandle.value) {
+        if (!configStore.currentFileHandle) {
             saveProjectAs();
             return;
         }
         try {
-            state.isProcessing.value = true;
+            uiStore.isProcessing = true;
             const jsonString = await createExportData();
             const blob = new Blob([jsonString], { type: "application/json" });
-            const writable = await state.currentFileHandle.value.createWritable();
+            const writable = await configStore.currentFileHandle.createWritable();
             await writable.write(blob);
             await writable.close();
             alert("上書き保存しました");
@@ -61,13 +63,13 @@ window.MangaApp.createProjectIO = function (deps) {
             console.error(e);
             alert("保存に失敗しました");
         } finally {
-            state.isProcessing.value = false;
+            uiStore.isProcessing = false;
         }
     };
 
     // Save as
     const saveProjectAs = async () => {
-        state.isProcessing.value = true;
+        uiStore.isProcessing = true;
         try {
             const jsonString = await createExportData();
             const blob = new Blob([jsonString], { type: "application/json" });
@@ -84,7 +86,7 @@ window.MangaApp.createProjectIO = function (deps) {
                     const writable = await handle.createWritable();
                     await writable.write(blob);
                     await writable.close();
-                    state.currentFileHandle.value = handle;
+                    configStore.currentFileHandle = handle;
                     alert("保存しました");
                 } catch (err) {
                     if (err.name !== 'AbortError') console.error(err);
@@ -97,7 +99,7 @@ window.MangaApp.createProjectIO = function (deps) {
             console.error(e);
             alert("エラーが発生しました");
         } finally {
-            state.isProcessing.value = false;
+            uiStore.isProcessing = false;
         }
     };
 
@@ -114,12 +116,12 @@ window.MangaApp.createProjectIO = function (deps) {
                 });
                 const file = await handle.getFile();
                 await loadFileContent(file);
-                state.currentFileHandle.value = handle;
+                configStore.currentFileHandle = handle;
             } catch (err) {
                 if (err.name !== 'AbortError') console.error(err);
             }
         } else {
-            state.fileInput.value.click();
+            uiStore.fileInput.click();
         }
     };
 
@@ -129,12 +131,12 @@ window.MangaApp.createProjectIO = function (deps) {
         if (!file) return;
         await loadFileContent(file);
         e.target.value = '';
-        state.currentFileHandle.value = null;
+        configStore.currentFileHandle = null;
     };
 
     // Load file content (shared)
     const loadFileContent = async (file) => {
-        state.isProcessing.value = true;
+        uiStore.isProcessing = true;
         try {
             const text = await file.text();
             const importedData = JSON.parse(text);
@@ -153,24 +155,24 @@ window.MangaApp.createProjectIO = function (deps) {
                 }
             }
 
-            state.pages.value.forEach(p => p.drawings.forEach(d => {
+            pageStore.pages.forEach(p => p.drawings.forEach(d => {
                 if (d.imgSrc) URL.revokeObjectURL(d.imgSrc);
             }));
 
-            state.pages.value = importedPages;
-            if (importedData.config) state.pageConfig.value = importedData.config;
+            pageStore.pages = importedPages;
+            if (importedData.config) configStore.pageConfig = importedData.config;
 
-            state.activePageIndex.value = 0;
+            pageStore.activePageIndex = 0;
             nextTick(() => {
-                if (state.currentMode.value === 'conte') canvas.restoreAllCanvases();
-                state.isProcessing.value = false;
+                if (pageStore.currentMode === 'conte') canvas.restoreAllCanvases();
+                uiStore.isProcessing = false;
                 helpers.resizeTextareas();
             });
 
         } catch (e) {
             console.error(e);
             alert("ファイルの読み込みに失敗しました");
-            state.isProcessing.value = false;
+            uiStore.isProcessing = false;
         }
     };
 

@@ -3,24 +3,26 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createExport = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
 
     // Export modal
     const openExportModal = () => {
-        state.exportSettings.value.rangeEnd = state.pages.value.length;
-        state.showExportModal.value = true;
+        configStore.exportSettings.rangeEnd = pageStore.pages.length;
+        uiStore.showExportModal = true;
     };
 
     const executeExport = () => {
-        state.showExportModal.value = false;
-        exportData(state.exportSettings.value.format, state.exportSettings.value);
+        uiStore.showExportModal = false;
+        exportData(configStore.exportSettings.format, configStore.exportSettings);
     };
 
     // Export data (PNG/PSD)
     const exportData = async (format = 'png', optSettings = null) => {
-        if (state.currentMode.value !== 'name') {
+        if (pageStore.currentMode !== 'name') {
             alert('ネームモードに切り替えてから実行します');
-            state.currentMode.value = 'name';
+            pageStore.currentMode = 'name';
             await nextTick();
         }
 
@@ -28,13 +30,13 @@ window.MangaApp.createExport = function (deps) {
 
         let targetPageIndices = [];
         if (settings.rangeType === 'current') {
-            targetPageIndices = [state.activePageIndex.value];
+            targetPageIndices = [pageStore.activePageIndex];
         } else if (settings.rangeType === 'custom') {
             const start = Math.max(0, (settings.rangeStart || 1) - 1);
-            const end = Math.min(state.pages.value.length - 1, (settings.rangeEnd || 1) - 1);
+            const end = Math.min(pageStore.pages.length - 1, (settings.rangeEnd || 1) - 1);
             for (let i = start; i <= end; i++) targetPageIndices.push(i);
         } else {
-            targetPageIndices = state.pages.value.map((_, i) => i);
+            targetPageIndices = pageStore.pages.map((_, i) => i);
         }
 
         if (targetPageIndices.length === 0) {
@@ -52,25 +54,25 @@ window.MangaApp.createExport = function (deps) {
             }
         }
 
-        state.isExporting.value = true;
-        state.isProcessing.value = true;
-        state.progress.value = 0;
-        state.progressMessage.value = '準備中...';
+        uiStore.isExporting = true;
+        uiStore.isProcessing = true;
+        uiStore.progress = 0;
+        uiStore.progressMessage = '準備中...';
 
         if (format === 'psd') {
-            state.isTextLayerMode.value = true;
-            state.isHideGuideMode.value = true;
-            state.isHideDrawingMode.value = true;
-            state.isTransparentMode.value = true;
+            uiStore.isTextLayerMode = true;
+            uiStore.isHideGuideMode = true;
+            uiStore.isHideDrawingMode = true;
+            uiStore.isTransparentMode = true;
         } else {
-            state.isTextLayerMode.value = false;
-            state.isHideGuideMode.value = true;
-            state.isHideDrawingMode.value = false;
-            state.isTransparentMode.value = false;
+            uiStore.isTextLayerMode = false;
+            uiStore.isHideGuideMode = true;
+            uiStore.isHideDrawingMode = false;
+            uiStore.isTransparentMode = false;
         }
 
-        state.selectedItemId.value = null;
-        state.isImageEditMode.value = false;
+        uiStore.selectedItemId = null;
+        uiStore.isImageEditMode = false;
         await nextTick();
         await new Promise(r => setTimeout(r, 1000));
 
@@ -78,17 +80,17 @@ window.MangaApp.createExport = function (deps) {
         const zip = useDirectory ? null : new JSZip();
 
         for (let i = 0; i < pageElements.length; i++) {
-            state.progress.value = Math.round((i / pageElements.length) * 100);
-            state.progressMessage.value = `${i + 1} / ${pageElements.length} ページ書き出し中...`;
+            uiStore.progress = Math.round((i / pageElements.length) * 100);
+            uiStore.progressMessage = `${i + 1} / ${pageElements.length} ページ書き出し中...`;
             await new Promise(r => setTimeout(r, 10));
 
             const el = pageElements[i];
             if (el.classList.contains('opacity-0')) continue;
 
             try {
-                const canvasW = state.pageConfig.value.canvasW;
-                const canvasH = state.pageConfig.value.canvasH;
-                const scale = state.pageConfig.value.scale;
+                const canvasW = configStore.pageConfig.canvasW;
+                const canvasH = configStore.pageConfig.canvasH;
+                const scale = configStore.pageConfig.scale;
                 const domW = el.clientWidth;
                 const ratio = canvasW / domW;
                 const pageNum = el.id.replace('render-page-', '');
@@ -148,7 +150,7 @@ window.MangaApp.createExport = function (deps) {
                     drawCanvas.width = canvasW;
                     drawCanvas.height = canvasH;
                     const dCtx = drawCanvas.getContext('2d');
-                    const pageData = state.pages.value[pageIndex];
+                    const pageData = pageStore.pages[pageIndex];
 
                     if (pageData) {
                         for (const d of pageData.drawings) {
@@ -194,7 +196,7 @@ window.MangaApp.createExport = function (deps) {
                     guideCanvas.height = canvasH;
                     const gCtx = guideCanvas.getContext('2d');
 
-                    const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = state.pageConfig.value;
+                    const { finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside } = configStore.pageConfig;
                     const fx = (canvasW - finishW) / 2;
                     const fy = (canvasH - finishH) / 2;
 
@@ -289,14 +291,14 @@ window.MangaApp.createExport = function (deps) {
             }
         }
 
-        state.isTextLayerMode.value = false;
-        state.isHideGuideMode.value = false;
-        state.isHideDrawingMode.value = false;
-        state.isTransparentMode.value = false;
-        state.isExporting.value = false;
-        state.isProcessing.value = false;
-        state.progress.value = 0;
-        state.progressMessage.value = '';
+        uiStore.isTextLayerMode = false;
+        uiStore.isHideGuideMode = false;
+        uiStore.isHideDrawingMode = false;
+        uiStore.isTransparentMode = false;
+        uiStore.isExporting = false;
+        uiStore.isProcessing = false;
+        uiStore.progress = 0;
+        uiStore.progressMessage = '';
 
         if (zip) {
             zip.generateAsync({ type: "blob" }).then(c => saveAs(c, format === 'png' ? "manga_png.zip" : "manga_psd.zip"));

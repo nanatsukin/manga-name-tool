@@ -1,73 +1,93 @@
 
 const { createApp, ref, computed, nextTick, watch, onMounted, onBeforeUpdate } = Vue;
+const { createPinia, storeToRefs } = Pinia;
 const { get, set } = idbKeyval;
 
-createApp({
+const pinia = createPinia();
+
+const app = createApp({
     setup() {
         const VueDeps = { Vue: { ref, computed, nextTick, watch, onMounted, onBeforeUpdate } };
 
-        // --- 1. State ---
-        const state = window.MangaApp.createState(VueDeps);
+        // --- 1. Stores ---
+        const pageStore = window.MangaApp.stores.usePageStore();
+        const configStore = window.MangaApp.stores.useConfigStore();
+        const uiStore = window.MangaApp.stores.useUiStore();
+        const historyStore = window.MangaApp.stores.useHistoryStore();
+
+        // Wire cross-store dependencies
+        pageStore.setUiStore(uiStore);
+        uiStore.setConfigStore(configStore);
+        historyStore.setStores(pageStore, uiStore);
 
         // --- 2. Helpers ---
-        const helpers = window.MangaApp.createHelpers({ Vue: VueDeps.Vue, state, addScript: null });
+        const helpers = window.MangaApp.createHelpers({
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, addScript: null
+        });
 
-        // --- 3. Computed ---
-        const computedProps = window.MangaApp.createComputed({ Vue: VueDeps.Vue, state });
+        // --- 3. Canvas ---
+        const canvas = window.MangaApp.createCanvas({
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers
+        });
 
-        // --- 4. History ---
-        const history = window.MangaApp.createHistory({ Vue: VueDeps.Vue, state });
-
-        // --- 5. Canvas ---
-        const canvas = window.MangaApp.createCanvas({ Vue: VueDeps.Vue, state, history, helpers });
-
-        // --- 6. Page Operations ---
-        const pageOps = window.MangaApp.createPageOps({ Vue: VueDeps.Vue, state, helpers, history, canvas });
+        // --- 4. Page Operations ---
+        const pageOps = window.MangaApp.createPageOps({
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers, canvas
+        });
 
         // Wire up late dependency: helpers.focusNext needs addScript
         helpers.setAddScript(pageOps.addScript);
 
-        // --- 7. Drag Plot ---
-        const dragPlot = window.MangaApp.createDragPlot({ state });
+        // --- 5. Drag Plot ---
+        const dragPlot = window.MangaApp.createDragPlot({ pageStore, uiStore });
 
-        // --- 8. Drag Conte ---
-        const dragConte = window.MangaApp.createDragConte({ state, canvas });
+        // --- 6. Drag Conte ---
+        const dragConte = window.MangaApp.createDragConte({ pageStore, uiStore, canvas });
 
-        // --- 9. Layout ---
+        // --- 7. Layout ---
         const layout = window.MangaApp.createLayout({
-            state, helpers, history, canvas, computed: computedProps
+            pageStore, configStore, uiStore, historyStore, helpers, canvas
         });
 
-        // --- 10. Project I/O ---
-        const projectIO = window.MangaApp.createProjectIO({ Vue: VueDeps.Vue, state, helpers, canvas });
+        // --- 8. Project I/O ---
+        const projectIO = window.MangaApp.createProjectIO({
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas
+        });
 
-        // --- 11. Export ---
-        const exporter = window.MangaApp.createExport({ Vue: VueDeps.Vue, state, helpers, canvas });
+        // --- 9. Export ---
+        const exporter = window.MangaApp.createExport({
+            Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas
+        });
 
-        // --- 12. Keyboard ---
-        const keyboard = window.MangaApp.createKeyboard({ Vue: VueDeps.Vue, state, helpers });
+        // --- 10. Keyboard ---
+        const keyboard = window.MangaApp.createKeyboard({
+            Vue: VueDeps.Vue, pageStore, uiStore, helpers
+        });
 
         // --- Watchers ---
-        watch([state.currentMode, state.activePageIndex], async () => {
-            if (state.currentMode.value === 'conte') {
+        const { currentMode, activePageIndex, pages } = storeToRefs(pageStore);
+        const { pageConfig, displayW } = storeToRefs(configStore);
+
+        watch([currentMode, activePageIndex], async () => {
+            if (pageStore.currentMode === 'conte') {
                 canvas.restoreAllCanvases();
             }
         });
 
-        watch([state.pages, state.pageConfig], () => {
-            if (state.isRestoring.value) return;
-            clearTimeout(state.autoSaveTimer);
-            state.autoSaveTimer = setTimeout(canvas.autoSaveToIDB, 2000);
+        watch([pages, pageConfig], () => {
+            if (uiStore.isRestoring) return;
+            clearTimeout(uiStore.autoSaveTimer);
+            uiStore.autoSaveTimer = setTimeout(canvas.autoSaveToIDB, 2000);
         }, { deep: true });
 
-        watch(computedProps.displayW, computedProps.checkScreenSize);
+        watch(displayW, () => uiStore.checkScreenSize());
 
         // --- Lifecycle ---
         onMounted(async () => {
             try {
                 const savedData = await get('manga_project_autosave');
                 if (savedData && confirm('前回の作業データを復元しますか？')) {
-                    state.isProcessing.value = true;
+                    uiStore.isProcessing = true;
                     if (savedData.pages) {
                         for (const page of savedData.pages) {
                             for (const drawing of page.drawings) {
@@ -80,86 +100,94 @@ createApp({
                                 drawing.historyStep = -1;
                             }
                         }
-                        state.pages.value = savedData.pages;
+                        pageStore.pages = savedData.pages;
                     }
-                    if (savedData.config) state.pageConfig.value = savedData.config;
+                    if (savedData.config) configStore.pageConfig = savedData.config;
 
                     await nextTick();
 
-                    state.pages.value.forEach(p => p.drawings.forEach(d => {
+                    pageStore.pages.forEach(p => p.drawings.forEach(d => {
                         if (d.imgSrc) { d.history = [d.imgSrc]; d.historyStep = 0; }
                     }));
                     helpers.resizeTextareas();
 
                 } else {
-                    if (state.pages.value[0].drawings[0]) history.saveHistory(state.pages.value[0].drawings[0]);
+                    if (pageStore.pages[0].drawings[0]) historyStore.saveHistory(pageStore.pages[0].drawings[0]);
                     nextTick(() => helpers.resizeTextareas());
                 }
             } catch (e) {
                 console.error("Restore failed:", e);
                 alert("データの復元に失敗しました。");
             } finally {
-                state.isRestoring.value = false;
-                state.isProcessing.value = false;
+                uiStore.isRestoring = false;
+                uiStore.isProcessing = false;
             }
 
             window.addEventListener('resize', () => {
                 helpers.resizeTextareas();
-                computedProps.checkScreenSize();
+                uiStore.checkScreenSize();
             });
-            computedProps.checkScreenSize();
+            uiStore.checkScreenSize();
             window.addEventListener('keydown', canvas.handleGlobalKeydown);
         });
 
         onBeforeUpdate(() => {
-            state.canvasRefs.value = {};
-            state.scriptInputRefs.value = {};
+            uiStore.canvasRefs = {};
+            uiStore.scriptInputRefs = {};
         });
 
         // --- Return ---
-        return {
-            // State
-            currentMode: state.currentMode,
-            pages: state.pages,
-            activePageIndex: state.activePageIndex,
-            drawingTool: state.drawingTool,
-            isExporting: state.isExporting,
-            canvasRefs: state.canvasRefs,
-            showSettings: state.showSettings,
-            pageConfig: state.pageConfig,
-            saveStatus: state.saveStatus,
-            showTextModal: state.showTextModal,
-            copiedPageId: state.copiedPageId,
-            selectedItemId: state.selectedItemId,
-            isImageEditMode: state.isImageEditMode,
-            showDrawingModal: state.showDrawingModal,
-            currentEditingDrawing: state.currentEditingDrawing,
-            modalCanvasRef: state.modalCanvasRef,
-            isConteDropTarget: state.isConteDropTarget,
-            draggingDrawingIndex: state.draggingDrawingIndex,
-            dropTargetDrawingIndex: state.dropTargetDrawingIndex,
-            isDrawingDragReady: state.isDrawingDragReady,
-            currentFileHandle: state.currentFileHandle,
-            isProcessing: state.isProcessing,
-            isTextLayerMode: state.isTextLayerMode,
-            isHideGuideMode: state.isHideGuideMode,
-            isHideDrawingMode: state.isHideDrawingMode,
-            isTransparentMode: state.isTransparentMode,
-            showExportModal: state.showExportModal,
-            exportSettings: state.exportSettings,
-            isMenuOpen: state.isMenuOpen,
-            fileInput: state.fileInput,
-            nameModeContainer: state.nameModeContainer,
-            progress: state.progress,
-            progressMessage: state.progressMessage,
-            fontOptions: state.fontOptions,
+        // storeToRefs for template reactivity
+        const pageRefs = storeToRefs(pageStore);
+        const configRefs = storeToRefs(configStore);
+        const uiRefs = storeToRefs(uiStore);
+        const historyRefs = storeToRefs(historyStore);
 
-            // Computed
-            saveStatusText: computedProps.saveStatusText,
-            spreads: computedProps.spreads,
-            drawingCountWarning: computedProps.drawingCountWarning,
-            pageStyle: computedProps.pageStyle,
-            uniqueCharacters: computedProps.uniqueCharacters,
+        return {
+            // Page store
+            currentMode: pageRefs.currentMode,
+            pages: pageRefs.pages,
+            activePageIndex: pageRefs.activePageIndex,
+            spreads: pageRefs.spreads,
+            drawingCountWarning: pageRefs.drawingCountWarning,
+            uniqueCharacters: pageRefs.uniqueCharacters,
+
+            // Config store
+            pageConfig: configRefs.pageConfig,
+            exportSettings: configRefs.exportSettings,
+            currentFileHandle: configRefs.currentFileHandle,
+            fontOptions: configStore.fontOptions,
+            pageStyle: configRefs.pageStyle,
+
+            // UI store
+            drawingTool: uiRefs.drawingTool,
+            isExporting: uiRefs.isExporting,
+            canvasRefs: uiRefs.canvasRefs,
+            showSettings: uiRefs.showSettings,
+            saveStatus: uiRefs.saveStatus,
+            saveStatusText: uiRefs.saveStatusText,
+            showTextModal: uiRefs.showTextModal,
+            copiedPageId: uiRefs.copiedPageId,
+            selectedItemId: uiRefs.selectedItemId,
+            isImageEditMode: uiRefs.isImageEditMode,
+            showDrawingModal: uiRefs.showDrawingModal,
+            currentEditingDrawing: uiRefs.currentEditingDrawing,
+            modalCanvasRef: uiRefs.modalCanvasRef,
+            isConteDropTarget: uiRefs.isConteDropTarget,
+            draggingDrawingIndex: uiRefs.draggingDrawingIndex,
+            dropTargetDrawingIndex: uiRefs.dropTargetDrawingIndex,
+            isDrawingDragReady: uiRefs.isDrawingDragReady,
+            isProcessing: uiRefs.isProcessing,
+            isTextLayerMode: uiRefs.isTextLayerMode,
+            isHideGuideMode: uiRefs.isHideGuideMode,
+            isHideDrawingMode: uiRefs.isHideDrawingMode,
+            isTransparentMode: uiRefs.isTransparentMode,
+            showExportModal: uiRefs.showExportModal,
+            isMenuOpen: uiRefs.isMenuOpen,
+            fileInput: uiRefs.fileInput,
+            nameModeContainer: uiRefs.nameModeContainer,
+            progress: uiRefs.progress,
+            progressMessage: uiRefs.progressMessage,
 
             // Helpers
             guideProps: helpers.guideProps,
@@ -176,12 +204,12 @@ createApp({
             getClientPos: helpers.getClientPos,
 
             // History
-            undo: history.undo,
-            redo: history.redo,
-            canUndo: history.canUndo,
-            canRedo: history.canRedo,
-            undoName: history.undoName,
-            redoName: history.redoName,
+            undo: historyStore.undo,
+            redo: historyStore.redo,
+            canUndo: historyStore.canUndo,
+            canRedo: historyStore.canRedo,
+            undoName: historyStore.undoName,
+            redoName: historyStore.redoName,
 
             // Canvas
             startDraw: canvas.startDraw,
@@ -263,4 +291,7 @@ createApp({
             splitScriptFromButton: keyboard.splitScriptFromButton
         };
     }
-}).mount('#app');
+});
+
+app.use(pinia);
+app.mount('#app');

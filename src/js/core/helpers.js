@@ -3,7 +3,9 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createHelpers = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
 
     // Touch / mouse coordinate helper
     const getClientPos = (e) => {
@@ -15,7 +17,7 @@ window.MangaApp.createHelpers = function (deps) {
 
     // Guide drawing coordinate calculation
     const guideProps = (pageIndex) => {
-        const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = state.pageConfig.value;
+        const { canvasW, canvasH, finishW, finishH, bleed, safeTop, safeBottom, safeInside, safeOutside, scale } = configStore.pageConfig;
 
         const fx = (canvasW - finishW) / 2;
         const fy = (canvasH - finishH) / 2;
@@ -90,12 +92,12 @@ window.MangaApp.createHelpers = function (deps) {
 
     // Input ref management
     const setInputRef = (el, p, s, type) => {
-        if (el) state.scriptInputRefs.value[`${p}-${s}-${type}`] = el;
+        if (el) uiStore.scriptInputRefs[`${p}-${s}-${type}`] = el;
     };
 
     const focusText = (p, s) => {
         nextTick(() => {
-            const el = state.scriptInputRefs.value[`${p}-${s}-text`];
+            const el = uiStore.scriptInputRefs[`${p}-${s}-text`];
             if (el) el.focus();
         });
     };
@@ -103,20 +105,20 @@ window.MangaApp.createHelpers = function (deps) {
     const focusPrev = (pIndex, sIndex, currentType) => {
         if (currentType === 'text') {
             nextTick(() => {
-                const el = state.scriptInputRefs.value[`${pIndex}-${sIndex}-char`];
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex}-char`];
                 if (el) el.focus();
             });
         } else if (currentType === 'char') {
             if (sIndex > 0) {
                 nextTick(() => {
-                    const el = state.scriptInputRefs.value[`${pIndex}-${sIndex - 1}-text`];
+                    const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex - 1}-text`];
                     if (el) el.focus();
                 });
             } else if (pIndex > 0) {
-                const prevPage = state.pages.value[pIndex - 1];
+                const prevPage = pageStore.pages[pIndex - 1];
                 if (prevPage.scripts.length > 0) {
                     nextTick(() => {
-                        const el = state.scriptInputRefs.value[`${pIndex - 1}-${prevPage.scripts.length - 1}-text`];
+                        const el = uiStore.scriptInputRefs[`${pIndex - 1}-${prevPage.scripts.length - 1}-text`];
                         if (el) el.focus();
                     });
                 }
@@ -129,21 +131,21 @@ window.MangaApp.createHelpers = function (deps) {
 
     const focusNext = (pIndex, sIndex) => {
         const addScript = _addScript;
-        if (state.pages.value[pIndex].scripts.length > sIndex + 1) {
+        if (pageStore.pages[pIndex].scripts.length > sIndex + 1) {
             nextTick(() => {
-                const el = state.scriptInputRefs.value[`${pIndex}-${sIndex + 1}-char`];
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-char`];
                 if (el) el.focus();
             });
-        } else if (state.pages.value.length > pIndex + 1) {
-            if (state.pages.value[pIndex + 1].scripts.length === 0 && addScript) addScript(pIndex + 1);
+        } else if (pageStore.pages.length > pIndex + 1) {
+            if (pageStore.pages[pIndex + 1].scripts.length === 0 && addScript) addScript(pIndex + 1);
             nextTick(() => {
-                const el = state.scriptInputRefs.value[`${pIndex + 1}-0-char`];
+                const el = uiStore.scriptInputRefs[`${pIndex + 1}-0-char`];
                 if (el) el.focus();
             });
         } else {
             if (addScript) addScript(pIndex);
             nextTick(() => {
-                const el = state.scriptInputRefs.value[`${pIndex}-${sIndex + 1}-char`];
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-char`];
                 if (el) el.focus();
             });
         }
@@ -159,8 +161,8 @@ window.MangaApp.createHelpers = function (deps) {
         const text = page.scripts.filter(s => s.char).map(s => s.text).join('\n\n');
         try {
             await navigator.clipboard.writeText(text);
-            state.copiedPageId.value = page.id;
-            setTimeout(() => state.copiedPageId.value = null, 1000);
+            uiStore.copiedPageId = page.id;
+            setTimeout(() => uiStore.copiedPageId = null, 1000);
         } catch (e) {
             alert('コピー失敗: ' + e);
         }
@@ -168,7 +170,7 @@ window.MangaApp.createHelpers = function (deps) {
 
     const copyAllPlots = async () => {
         let output = "### マンガプロット構成案\n\n";
-        state.pages.value.forEach((page, index) => {
+        pageStore.pages.forEach((page, index) => {
             output += `--- Page ${index + 1} ---\n`;
             if (page.scripts.length === 0) {
                 output += "(セリフ・ト書きなし)\n";
@@ -195,13 +197,13 @@ window.MangaApp.createHelpers = function (deps) {
 
     // Script query helpers
     const getUnassignedScripts = (pIdx) => {
-        const page = state.pages.value[pIdx];
+        const page = pageStore.pages[pIdx];
         const validDrawingIds = new Set(page.drawings.map(d => d.id));
         return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
     };
 
     const getScriptsForDrawing = (pIdx, drawingId) => {
-        return state.pages.value[pIdx].scripts.filter(s => s.drawingId === drawingId);
+        return pageStore.pages[pIdx].scripts.filter(s => s.drawingId === drawingId);
     };
 
     return {

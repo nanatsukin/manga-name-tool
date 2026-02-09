@@ -3,84 +3,86 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createPageOps = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
+    const historyStore = deps.historyStore;
     const helpers = deps.helpers;
-    const history = deps.history;
     const canvas = deps.canvas;
 
     // Mode switching
     const changeMode = async (mode) => {
-        if (state.currentMode.value === 'name' && state.nameModeContainer.value) {
-            state.nameModeScrollTop = state.nameModeContainer.value.scrollTop;
+        if (pageStore.currentMode === 'name' && uiStore.nameModeContainer) {
+            uiStore.nameModeScrollTop = uiStore.nameModeContainer.scrollTop;
         }
-        if (state.currentMode.value === 'conte') await canvas.saveAllCanvases();
-        state.currentMode.value = mode;
-        state.selectedItemId.value = null;
-        state.isImageEditMode.value = false;
+        if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
+        pageStore.currentMode = mode;
+        uiStore.selectedItemId = null;
+        uiStore.isImageEditMode = false;
 
         if (mode === 'plot') {
             nextTick(() => helpers.resizeTextareas());
         } else if (mode === 'name') {
             nextTick(() => {
-                if (state.nameModeContainer.value) {
-                    state.nameModeContainer.value.scrollTop = state.nameModeScrollTop;
+                if (uiStore.nameModeContainer) {
+                    uiStore.nameModeContainer.scrollTop = uiStore.nameModeScrollTop;
                 }
-                history.resetNameHistory();
-                history.recordNameHistory();
+                historyStore.resetNameHistory();
+                historyStore.recordNameHistory();
             });
         }
     };
 
     // Page CRUD
     const addPage = async () => {
-        if (state.currentMode.value === 'conte') await canvas.saveAllCanvases();
-        state.pages.value.push({ id: Date.now(), scripts: [], drawings: [] });
+        if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
+        pageStore.pages.push({ id: Date.now(), scripts: [], drawings: [] });
     };
 
     const deletePage = (idx) => {
         if (idx === 0) {
-            if (state.pages.value.length > 1) {
+            if (pageStore.pages.length > 1) {
                 if (confirm("最初のページを削除しますか？（セリフはすべて消去されます）")) {
-                    state.pages.value.splice(idx, 1);
+                    pageStore.pages.splice(idx, 1);
                 }
             }
             return;
         }
-        const scriptsToMove = state.pages.value[idx].scripts;
+        const scriptsToMove = pageStore.pages[idx].scripts;
         if (scriptsToMove.length > 0) {
             if (!confirm(`ページ ${idx + 1} を削除して、セリフを前のページに結合しますか？`)) return;
-            state.pages.value[idx - 1].scripts.push(...scriptsToMove);
+            pageStore.pages[idx - 1].scripts.push(...scriptsToMove);
         } else {
-            state.pages.value.splice(idx, 1);
+            pageStore.pages.splice(idx, 1);
             return;
         }
-        state.pages.value.splice(idx, 1);
+        pageStore.pages.splice(idx, 1);
         nextTick(() => helpers.resizeTextareas());
     };
 
     // Script CRUD
     const addScript = (pIdx) => {
-        state.pages.value[pIdx].scripts.push({
+        pageStore.pages[pIdx].scripts.push({
             id: Date.now() + Math.random(),
             type: 'dialogue',
             char: '', text: '',
             drawingId: null,
-            layout: { x: 300, y: 200, fontSize: state.pageConfig.value.defaultFontSize }
+            layout: { x: 300, y: 200, fontSize: configStore.pageConfig.defaultFontSize }
         });
         nextTick(() => helpers.resizeTextareas());
     };
 
     const removeScript = (pIndex, idx) => {
-        const script = state.pages.value[pIndex].scripts[idx];
+        const script = pageStore.pages[pIndex].scripts[idx];
         if (script.text && script.text.trim() !== '') {
             if (!confirm('このセリフを削除しますか？\n\n' + (script.text.substring(0, 20) + '...'))) return;
         }
-        state.pages.value[pIndex].scripts.splice(idx, 1);
+        pageStore.pages[pIndex].scripts.splice(idx, 1);
         nextTick(() => helpers.resizeTextareas());
     };
 
     const toggleScriptType = (pIndex, idx) => {
-        const script = state.pages.value[pIndex].scripts[idx];
+        const script = pageStore.pages[pIndex].scripts[idx];
         if (!script.type) {
             script.type = script.char ? 'dialogue' : 'direction';
         }
@@ -96,21 +98,21 @@ window.MangaApp.createPageOps = function (deps) {
     };
 
     const addNoteToCurrentPage = () => {
-        const pIdx = state.activePageIndex.value;
-        const page = state.pages.value[pIdx];
-        const viewportCenterY = (state.nameModeContainer.value?.scrollTop || 0) + (window.innerHeight / 2) - 100;
-        const y = Math.max(50, Math.min(state.pageConfig.value.canvasH * state.pageConfig.value.scale - 100, viewportCenterY));
+        const pIdx = pageStore.activePageIndex;
+        const page = pageStore.pages[pIdx];
+        const viewportCenterY = (uiStore.nameModeContainer?.scrollTop || 0) + (window.innerHeight / 2) - 100;
+        const y = Math.max(50, Math.min(configStore.pageConfig.canvasH * configStore.pageConfig.scale - 100, viewportCenterY));
         page.scripts.push({
             id: Date.now(), type: 'note', char: '', text: '注意書き',
             drawingId: null,
-            layout: { x: 100, y: y, fontSize: state.pageConfig.value.defaultFontSize }
+            layout: { x: 100, y: y, fontSize: configStore.pageConfig.defaultFontSize }
         });
-        history.recordNameHistory();
+        historyStore.recordNameHistory();
     };
 
     // Script operations
     const moveScript = (pIndex, sIndex, dir) => {
-        const scripts = state.pages.value[pIndex].scripts;
+        const scripts = pageStore.pages[pIndex].scripts;
         const targetIndex = sIndex + dir;
         if (targetIndex >= 0 && targetIndex < scripts.length) {
             const item = scripts.splice(sIndex, 1)[0];
@@ -120,7 +122,7 @@ window.MangaApp.createPageOps = function (deps) {
     };
 
     const insertScriptAfter = (pIndex, sIndex) => {
-        const scripts = state.pages.value[pIndex].scripts;
+        const scripts = pageStore.pages[pIndex].scripts;
         const newScript = {
             id: Date.now() + Math.random(),
             type: 'dialogue', char: '', text: '',
@@ -130,57 +132,57 @@ window.MangaApp.createPageOps = function (deps) {
         scripts.splice(sIndex + 1, 0, newScript);
         nextTick(() => {
             helpers.resizeTextareas();
-            const nextCharInput = state.scriptInputRefs.value[`${pIndex}-${sIndex + 1}-char`];
+            const nextCharInput = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-char`];
             if (nextCharInput) nextCharInput.focus();
         });
     };
 
     const moveSubsequentScriptsToNewPage = async (pIndex, sIndex) => {
         if (!confirm("このセリフ以降を新しいページに移動しますか？")) return;
-        const scriptsToMove = state.pages.value[pIndex].scripts.splice(sIndex);
+        const scriptsToMove = pageStore.pages[pIndex].scripts.splice(sIndex);
         const newPage = { id: Date.now(), scripts: scriptsToMove, drawings: [] };
-        state.pages.value.splice(pIndex + 1, 0, newPage);
+        pageStore.pages.splice(pIndex + 1, 0, newPage);
         nextTick(() => helpers.resizeTextareas());
     };
 
     // Navigation
     const nextPage = async () => {
-        if (state.activePageIndex.value < state.pages.value.length - 1) {
-            if (state.currentMode.value === 'conte') await canvas.saveAllCanvases();
-            state.activePageIndex.value++;
+        if (pageStore.activePageIndex < pageStore.pages.length - 1) {
+            if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
+            pageStore.activePageIndex++;
         }
     };
 
     const prevPage = async () => {
-        if (state.activePageIndex.value > 0) {
-            if (state.currentMode.value === 'conte') await canvas.saveAllCanvases();
-            state.activePageIndex.value--;
+        if (pageStore.activePageIndex > 0) {
+            if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
+            pageStore.activePageIndex--;
         }
     };
 
     // Selection
     const selectItem = (id) => {
-        state.selectedItemId.value = id;
+        uiStore.selectedItemId = id;
         if (id === null) {
-            state.isImageEditMode.value = false;
+            uiStore.isImageEditMode = false;
             return;
         }
-        state.pages.value.forEach((page, pIdx) => {
+        pageStore.pages.forEach((page, pIdx) => {
             const hasDrawing = page.drawings.some(d => d.id === id);
             const hasScript = page.scripts.some(s => s.id === id);
             if (hasDrawing || hasScript) {
-                state.activePageIndex.value = pIdx;
+                pageStore.activePageIndex = pIdx;
             }
         });
     };
 
     const toggleImageEditMode = () => {
-        state.isImageEditMode.value = !state.isImageEditMode.value;
+        uiStore.isImageEditMode = !uiStore.isImageEditMode;
     };
 
     // Drawing CRUD
     const addDrawing = (pIdx) => {
-        const targetIdx = (typeof pIdx === 'number') ? pIdx : state.activePageIndex.value;
+        const targetIdx = (typeof pIdx === 'number') ? pIdx : pageStore.activePageIndex;
         const newDrawing = {
             id: Date.now() + Math.random(),
             imgSrc: null,
@@ -189,31 +191,31 @@ window.MangaApp.createPageOps = function (deps) {
             history: [],
             historyStep: -1
         };
-        state.pages.value[targetIdx].drawings.push(newDrawing);
-        nextTick(() => history.saveHistory(newDrawing));
+        pageStore.pages[targetIdx].drawings.push(newDrawing);
+        nextTick(() => historyStore.saveHistory(newDrawing));
     };
 
     const removeDrawing = (pIdx, idx) => {
         if (confirm('削除しますか？')) {
-            const removedId = state.pages.value[pIdx].drawings[idx].id;
-            if (state.pages.value[pIdx].drawings[idx].imgSrc) {
-                URL.revokeObjectURL(state.pages.value[pIdx].drawings[idx].imgSrc);
+            const removedId = pageStore.pages[pIdx].drawings[idx].id;
+            if (pageStore.pages[pIdx].drawings[idx].imgSrc) {
+                URL.revokeObjectURL(pageStore.pages[pIdx].drawings[idx].imgSrc);
             }
-            state.pages.value[pIdx].scripts.forEach(s => {
+            pageStore.pages[pIdx].scripts.forEach(s => {
                 if (s.drawingId === removedId) s.drawingId = null;
             });
-            state.pages.value[pIdx].drawings.splice(idx, 1);
+            pageStore.pages[pIdx].drawings.splice(idx, 1);
         }
     };
 
     // Jump navigation
     const jumpToPlot = async (pIndex, script) => {
-        const sIndex = state.pages.value[pIndex].scripts.findIndex(s => s.id === script.id);
+        const sIndex = pageStore.pages[pIndex].scripts.findIndex(s => s.id === script.id);
         if (sIndex === -1) return;
         await changeMode('plot');
         setTimeout(() => {
             const refKey = `${pIndex}-${sIndex}-text`;
-            const el = state.scriptInputRefs.value[refKey];
+            const el = uiStore.scriptInputRefs[refKey];
             if (el) {
                 el.scrollIntoView({ behavior: 'auto', block: 'center' });
                 el.focus();
@@ -223,7 +225,7 @@ window.MangaApp.createPageOps = function (deps) {
 
     const jumpToConte = async (pIndex, script) => {
         await changeMode('conte');
-        state.activePageIndex.value = pIndex;
+        pageStore.activePageIndex = pIndex;
         if (script.drawingId) {
             setTimeout(() => {
                 const el = document.getElementById('conte-drawing-' + script.drawingId);
@@ -245,7 +247,7 @@ window.MangaApp.createPageOps = function (deps) {
 
     // Conte order sorting
     const sortScriptsByConteOrder = (pageIndex) => {
-        const page = state.pages.value[pageIndex];
+        const page = pageStore.pages[pageIndex];
         if (!page) return;
         let newScripts = [];
         for (const drawing of page.drawings) {
@@ -259,7 +261,7 @@ window.MangaApp.createPageOps = function (deps) {
 
     const sortAllScriptsByConteOrder = () => {
         if (!confirm('全ページのプロットをコンテのコマ順に合わせて並び替えますか？')) return;
-        state.pages.value.forEach((_, index) => {
+        pageStore.pages.forEach((_, index) => {
             sortScriptsByConteOrder(index);
         });
         nextTick(() => helpers.resizeTextareas());
@@ -267,13 +269,13 @@ window.MangaApp.createPageOps = function (deps) {
 
     // Font size
     const applyFontSizeToAll = () => {
-        if (!confirm(`すべてのページのセリフのフォントサイズを、現在の設定値(${state.pageConfig.value.defaultFontSize}px)に統一しますか？`)) return;
-        state.pages.value.forEach(p => {
+        if (!confirm(`すべてのページのセリフのフォントサイズを、現在の設定値(${configStore.pageConfig.defaultFontSize}px)に統一しますか？`)) return;
+        pageStore.pages.forEach(p => {
             p.scripts.forEach(s => {
-                s.layout.fontSize = state.pageConfig.value.defaultFontSize;
+                s.layout.fontSize = configStore.pageConfig.defaultFontSize;
             });
         });
-        if (state.currentMode.value === 'name') history.recordNameHistory();
+        if (pageStore.currentMode === 'name') historyStore.recordNameHistory();
     };
 
     return {

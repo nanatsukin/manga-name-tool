@@ -3,7 +3,8 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createKeyboard = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const uiStore = deps.uiStore;
     const helpers = deps.helpers;
 
     const handleScriptTextKeydown = (e, pIndex, sIndex) => {
@@ -31,14 +32,14 @@ window.MangaApp.createKeyboard = function (deps) {
     };
 
     const splitScriptFromButton = (pIndex, sIndex) => {
-        const el = state.scriptInputRefs.value[`${pIndex}-${sIndex}-text`];
+        const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex}-text`];
         if (el) {
             performSplit(pIndex, sIndex, el);
         }
     };
 
     const performSplit = (pIndex, sIndex, textareaElement) => {
-        const scripts = state.pages.value[pIndex].scripts;
+        const scripts = pageStore.pages[pIndex].scripts;
         const currentScript = scripts[sIndex];
 
         const cursor = textareaElement.selectionStart || 0;
@@ -62,7 +63,7 @@ window.MangaApp.createKeyboard = function (deps) {
 
         nextTick(() => {
             helpers.resizeTextareas();
-            const nextInput = state.scriptInputRefs.value[`${pIndex}-${sIndex + 1}-text`];
+            const nextInput = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-text`];
             if (nextInput) {
                 nextInput.focus();
                 nextInput.setSelectionRange(0, 0);
@@ -71,7 +72,7 @@ window.MangaApp.createKeyboard = function (deps) {
     };
 
     const mergeScriptWithPrev = (pIndex, sIndex) => {
-        const scripts = state.pages.value[pIndex].scripts;
+        const scripts = pageStore.pages[pIndex].scripts;
         const currentScript = scripts[sIndex];
         const prevScript = scripts[sIndex - 1];
         const originalPrevLength = prevScript.text.length;
@@ -81,7 +82,7 @@ window.MangaApp.createKeyboard = function (deps) {
 
         nextTick(() => {
             helpers.resizeTextareas();
-            const prevInput = state.scriptInputRefs.value[`${pIndex}-${sIndex - 1}-text`];
+            const prevInput = uiStore.scriptInputRefs[`${pIndex}-${sIndex - 1}-text`];
             if (prevInput) {
                 prevInput.focus();
                 prevInput.setSelectionRange(originalPrevLength, originalPrevLength);

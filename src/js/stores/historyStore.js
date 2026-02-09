@@ -1,22 +1,30 @@
-// js/core/history.js - Name mode history + drawing canvas history
+// js/stores/historyStore.js - Undo/Redo履歴管理
 window.MangaApp = window.MangaApp || {};
+window.MangaApp.stores = window.MangaApp.stores || {};
 
-window.MangaApp.createHistory = function (deps) {
-    const { ref } = deps.Vue;
-    const state = deps.state;
+window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
+    const { ref } = Vue;
+
+    // Cross-store dependencies (injected via setStores)
+    let _pageStore = null;
+    let _uiStore = null;
+    const setStores = (pageStore, uiStore) => {
+        _pageStore = pageStore;
+        _uiStore = uiStore;
+    };
 
     // --- Name mode history ---
     const nameHistory = ref([]);
     const nameHistoryIndex = ref(-1);
 
     const recordNameHistory = () => {
-        if (state.currentMode.value !== 'name') return;
+        if (_pageStore.currentMode !== 'name') return;
 
         if (nameHistoryIndex.value < nameHistory.value.length - 1) {
             nameHistory.value = nameHistory.value.slice(0, nameHistoryIndex.value + 1);
         }
 
-        const snapshot = JSON.stringify(state.pages.value);
+        const snapshot = JSON.stringify(_pageStore.pages);
         if (nameHistory.value.length > 0 && nameHistory.value[nameHistory.value.length - 1] === snapshot) {
             return;
         }
@@ -34,7 +42,7 @@ window.MangaApp.createHistory = function (deps) {
         if (nameHistoryIndex.value > 0) {
             nameHistoryIndex.value--;
             try {
-                state.pages.value = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
+                _pageStore.pages = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
             } catch (e) { console.error(e); }
         }
     };
@@ -43,7 +51,7 @@ window.MangaApp.createHistory = function (deps) {
         if (nameHistoryIndex.value < nameHistory.value.length - 1) {
             nameHistoryIndex.value++;
             try {
-                state.pages.value = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
+                _pageStore.pages = JSON.parse(nameHistory.value[nameHistoryIndex.value]);
             } catch (e) { console.error(e); }
         }
     };
@@ -55,7 +63,7 @@ window.MangaApp.createHistory = function (deps) {
 
     // --- Drawing canvas history ---
     const saveHistory = (drawing) => {
-        const canvas = state.showDrawingModal.value ? state.modalCanvasRef.value : state.canvasRefs.value[drawing.id];
+        const canvas = _uiStore.showDrawingModal ? _uiStore.modalCanvasRef : _uiStore.canvasRefs[drawing.id];
         if (!canvas) return;
 
         canvas.toBlob(blob => {
@@ -72,14 +80,14 @@ window.MangaApp.createHistory = function (deps) {
             drawing.imgSrc = url;
             drawing.cachedBlob = blob;
 
-            if (state.showDrawingModal.value && state.currentEditingDrawing.value?.id === drawing.id) {
-                state.currentEditingDrawing.value = { ...drawing };
+            if (_uiStore.showDrawingModal && _uiStore.currentEditingDrawing?.id === drawing.id) {
+                _uiStore.currentEditingDrawing = { ...drawing };
             }
         });
     };
 
     const drawToCanvas = (drawing, url, targetCanvas = null) => {
-        const canvas = targetCanvas || (state.showDrawingModal.value ? state.modalCanvasRef.value : state.canvasRefs.value[drawing.id]);
+        const canvas = targetCanvas || (_uiStore.showDrawingModal ? _uiStore.modalCanvasRef : _uiStore.canvasRefs[drawing.id]);
         if (!canvas) {
             console.error("Canvas not found for drawing:", drawing.id);
             return;
@@ -121,7 +129,8 @@ window.MangaApp.createHistory = function (deps) {
 
     return {
         nameHistory, nameHistoryIndex,
+        setStores,
         recordNameHistory, undoName, redoName, resetNameHistory,
         saveHistory, drawToCanvas, undo, redo, canUndo, canRedo
     };
-};
+});

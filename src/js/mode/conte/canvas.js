@@ -3,16 +3,18 @@ window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createCanvas = function (deps) {
     const { nextTick } = deps.Vue;
-    const state = deps.state;
-    const history = deps.history;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
+    const historyStore = deps.historyStore;
     const helpers = deps.helpers;
 
     // Save all canvases
     const saveAllCanvases = async () => {
         const promises = [];
-        state.pages.value.forEach(page => {
+        pageStore.pages.forEach(page => {
             page.drawings.forEach(d => {
-                const cvs = state.canvasRefs.value[d.id];
+                const cvs = uiStore.canvasRefs[d.id];
                 if (cvs) {
                     const p = new Promise(resolve => {
                         cvs.toBlob(blob => {
@@ -36,14 +38,14 @@ window.MangaApp.createCanvas = function (deps) {
     const restoreAllCanvases = async () => {
         await nextTick();
         const tryRestore = (count = 0) => {
-            const pageData = state.pages.value[state.activePageIndex.value];
+            const pageData = pageStore.pages[pageStore.activePageIndex];
             if (!pageData) return;
 
             let allDone = true;
             pageData.drawings.forEach(d => {
-                if (d.imgSrc && state.canvasRefs.value[d.id]) {
-                    history.drawToCanvas(d, d.imgSrc);
-                } else if (d.imgSrc && !state.canvasRefs.value[d.id]) {
+                if (d.imgSrc && uiStore.canvasRefs[d.id]) {
+                    historyStore.drawToCanvas(d, d.imgSrc);
+                } else if (d.imgSrc && !uiStore.canvasRefs[d.id]) {
                     allDone = false;
                 }
             });
@@ -58,12 +60,12 @@ window.MangaApp.createCanvas = function (deps) {
     // Open drawing modal
     const openDrawingModal = async (drawing) => {
         await saveAllCanvases();
-        state.currentEditingDrawing.value = drawing;
-        state.showDrawingModal.value = true;
+        uiStore.currentEditingDrawing = drawing;
+        uiStore.showDrawingModal = true;
 
         await nextTick();
 
-        const canvas = state.modalCanvasRef.value;
+        const canvas = uiStore.modalCanvasRef;
         if (canvas && drawing.imgSrc) {
             const ctx = canvas.getContext('2d');
             const img = new Image();
@@ -81,8 +83,8 @@ window.MangaApp.createCanvas = function (deps) {
 
     // Close drawing modal
     const closeDrawingModal = () => {
-        const drawing = state.currentEditingDrawing.value;
-        const canvas = state.modalCanvasRef.value;
+        const drawing = uiStore.currentEditingDrawing;
+        const canvas = uiStore.modalCanvasRef;
 
         if (drawing && canvas) {
             canvas.toBlob(blob => {
@@ -96,28 +98,28 @@ window.MangaApp.createCanvas = function (deps) {
                 drawing.historyStep++;
                 drawing.imgSrc = url;
                 drawing.cachedBlob = blob;
-                state.showDrawingModal.value = false;
-                state.currentEditingDrawing.value = null;
+                uiStore.showDrawingModal = false;
+                uiStore.currentEditingDrawing = null;
             });
         } else {
-            state.showDrawingModal.value = false;
+            uiStore.showDrawingModal = false;
         }
     };
 
     // Canvas drawing
     const startDraw = (e, drawing) => {
         if (e.type === 'touchstart') e.preventDefault();
-        state.isDrawing.value = true;
-        state.lastActiveDrawingId.value = drawing.id;
+        uiStore.isDrawing = true;
+        uiStore.lastActiveDrawingId = drawing.id;
         const canvas = e.target;
         const rect = canvas.getBoundingClientRect();
         const pos = helpers.getClientPos(e);
-        state.lastPos.x = pos.x - rect.left;
-        state.lastPos.y = pos.y - rect.top;
+        uiStore.lastPos.x = pos.x - rect.left;
+        uiStore.lastPos.y = pos.y - rect.top;
     };
 
     const draw = (e, drawing) => {
-        if (!state.isDrawing.value) return;
+        if (!uiStore.isDrawing) return;
         if (e.type === 'touchmove') e.preventDefault();
 
         const canvas = e.target;
@@ -128,65 +130,65 @@ window.MangaApp.createCanvas = function (deps) {
         const y = pos.y - rect.top;
 
         ctx.beginPath();
-        ctx.moveTo(state.lastPos.x, state.lastPos.y);
+        ctx.moveTo(uiStore.lastPos.x, uiStore.lastPos.y);
         ctx.lineTo(x, y);
-        ctx.strokeStyle = state.drawingTool.value === 'eraser' ? '#ffffff' : '#000000';
-        ctx.lineWidth = state.drawingTool.value === 'eraser' ? 20 : 3;
+        ctx.strokeStyle = uiStore.drawingTool === 'eraser' ? '#ffffff' : '#000000';
+        ctx.lineWidth = uiStore.drawingTool === 'eraser' ? 20 : 3;
         ctx.lineCap = 'round';
         ctx.stroke();
 
-        state.lastPos.x = x;
-        state.lastPos.y = y;
+        uiStore.lastPos.x = x;
+        uiStore.lastPos.y = y;
     };
 
     const stopDraw = (drawing) => {
-        if (state.isDrawing.value) {
-            state.isDrawing.value = false;
-            const target = drawing || state.currentEditingDrawing.value;
+        if (uiStore.isDrawing) {
+            uiStore.isDrawing = false;
+            const target = drawing || uiStore.currentEditingDrawing;
             if (target) {
-                history.saveHistory(target);
+                historyStore.saveHistory(target);
             }
         }
     };
 
     const clearCurrentPageCanvas = () => {
         if (!confirm('全消去しますか？')) return;
-        state.pages.value[state.activePageIndex.value].drawings.forEach(d => {
-            const cvs = state.canvasRefs.value[d.id];
+        pageStore.pages[pageStore.activePageIndex].drawings.forEach(d => {
+            const cvs = uiStore.canvasRefs[d.id];
             if (cvs) cvs.getContext('2d').clearRect(0, 0, 360, 240);
-            history.saveHistory(d);
+            historyStore.saveHistory(d);
         });
     };
 
     // Global keydown handler for conte mode undo/redo
     const handleGlobalKeydown = (e) => {
-        if (state.currentMode.value !== 'conte') return;
-        if (!state.lastActiveDrawingId.value) return;
+        if (pageStore.currentMode !== 'conte') return;
+        if (!uiStore.lastActiveDrawingId) return;
         let targetDrawing = null;
-        for (const page of state.pages.value) {
-            targetDrawing = page.drawings.find(d => d.id === state.lastActiveDrawingId.value);
+        for (const page of pageStore.pages) {
+            targetDrawing = page.drawings.find(d => d.id === uiStore.lastActiveDrawingId);
             if (targetDrawing) break;
         }
         if (!targetDrawing) return;
         if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
             e.preventDefault();
-            e.shiftKey ? history.redo(targetDrawing) : history.undo(targetDrawing);
+            e.shiftKey ? historyStore.redo(targetDrawing) : historyStore.undo(targetDrawing);
         } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
             e.preventDefault();
-            history.redo(targetDrawing);
+            historyStore.redo(targetDrawing);
         }
     };
 
     // IDB auto-save
     const autoSaveToIDB = async () => {
-        if (state.isRestoring.value) return;
-        state.saveStatus.value = 'saving';
+        if (uiStore.isRestoring) return;
+        uiStore.saveStatus = 'saving';
         try {
-            const dataToSave = { pages: JSON.parse(JSON.stringify(state.pages.value)), config: JSON.parse(JSON.stringify(state.pageConfig.value)) };
+            const dataToSave = { pages: JSON.parse(JSON.stringify(pageStore.pages)), config: JSON.parse(JSON.stringify(configStore.pageConfig)) };
             await Promise.all(dataToSave.pages.map(async (page, pIdx) => {
                 await Promise.all(page.drawings.map(async (d, dIdx) => {
                     delete d.history; delete d.historyStep;
-                    const originalDrawing = state.pages.value[pIdx].drawings[dIdx];
+                    const originalDrawing = pageStore.pages[pIdx].drawings[dIdx];
                     const originalImgSrc = originalDrawing.imgSrc;
                     if (originalDrawing.cachedBlob) {
                         d.imgBlob = originalDrawing.cachedBlob;
@@ -202,10 +204,10 @@ window.MangaApp.createCanvas = function (deps) {
                 }));
             }));
             await idbKeyval.set('manga_project_autosave', dataToSave);
-            state.saveStatus.value = 'saved';
+            uiStore.saveStatus = 'saved';
         } catch (e) {
             console.error(e);
-            state.saveStatus.value = 'error';
+            uiStore.saveStatus = 'error';
         }
     };
 

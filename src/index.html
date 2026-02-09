@@ -6,7 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ネーム製作ツール</title>
 
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.js"></script>
+    <script>
+    Vue.isVue2 = false;
+    Vue.isVue3 = true;
+    Vue.install = function(){};
+    Vue.Vue = Vue;
+    Vue.Vue2 = undefined;
+    window.VueDemi = Vue;
+    </script>
+    <script src="https://unpkg.com/pinia@2.1.7/dist/pinia.iife.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js"></script>
     <script src="https://unpkg.com/ag-psd/dist/bundle.js"></script>
@@ -796,11 +805,14 @@
             </div>
         </main>
     </div>
+    <!-- Stores (Pinia) -->
+    <script src="js/stores/pageStore.js"></script>
+    <script src="js/stores/configStore.js"></script>
+    <script src="js/stores/uiStore.js"></script>
+    <script src="js/stores/historyStore.js"></script>
+
     <!-- Core -->
-    <script src="js/core/state.js"></script>
     <script src="js/core/helpers.js"></script>
-    <script src="js/core/computed.js"></script>
-    <script src="js/core/history.js"></script>
 
     <!-- Mode: Conte (canvas must load before page-ops, drag, layout) -->
     <script src="js/mode/conte/canvas.js"></script>

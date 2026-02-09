@@ -2,41 +2,42 @@
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createDragConte = function (deps) {
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const uiStore = deps.uiStore;
     const canvas = deps.canvas;
 
     // Drawing drag handle
-    const onHandleDown = () => { state.isDrawingDragReady.value = true; };
-    const onHandleUp = () => { state.isDrawingDragReady.value = false; };
+    const onHandleDown = () => { uiStore.isDrawingDragReady = true; };
+    const onHandleUp = () => { uiStore.isDrawingDragReady = false; };
 
     // Drawing D&D
     const dragStartDrawing = (e, idx) => {
-        if (!state.isDrawingDragReady.value) {
+        if (!uiStore.isDrawingDragReady) {
             e.preventDefault();
             return;
         }
-        state.draggingDrawingIndex.value = idx;
+        uiStore.draggingDrawingIndex = idx;
     };
 
     const dragEndDrawing = () => {
-        state.draggingDrawingIndex.value = null;
-        state.dropTargetDrawingIndex.value = null;
-        state.isDrawingDragReady.value = false;
+        uiStore.draggingDrawingIndex = null;
+        uiStore.dropTargetDrawingIndex = null;
+        uiStore.isDrawingDragReady = false;
     };
 
     const dragOverDrawing = (idx) => {
-        if (state.draggingDrawingIndex.value === null) return;
-        if (state.draggingDrawingIndex.value === idx) return;
-        if (state.dropTargetDrawingIndex.value !== idx) state.dropTargetDrawingIndex.value = idx;
+        if (uiStore.draggingDrawingIndex === null) return;
+        if (uiStore.draggingDrawingIndex === idx) return;
+        if (uiStore.dropTargetDrawingIndex !== idx) uiStore.dropTargetDrawingIndex = idx;
     };
 
     const dropOnDrawing = async (targetIdx) => {
-        const srcIdx = state.draggingDrawingIndex.value;
+        const srcIdx = uiStore.draggingDrawingIndex;
         if (srcIdx === null) return;
 
-        const page = state.pages.value[state.activePageIndex.value];
+        const page = pageStore.pages[pageStore.activePageIndex];
         await Promise.all(page.drawings.map(d => {
-            const cvs = state.canvasRefs.value[d.id];
+            const cvs = uiStore.canvasRefs[d.id];
             if (cvs) {
                 return new Promise(resolve => {
                     cvs.toBlob(blob => {
@@ -51,7 +52,7 @@ window.MangaApp.createDragConte = function (deps) {
             return Promise.resolve();
         }));
 
-        const drawings = state.pages.value[state.activePageIndex.value].drawings;
+        const drawings = pageStore.pages[pageStore.activePageIndex].drawings;
         const item = drawings.splice(srcIdx, 1)[0];
         drawings.splice(targetIdx, 0, item);
 
@@ -65,25 +66,25 @@ window.MangaApp.createDragConte = function (deps) {
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.dropEffect = 'move';
         e.dataTransfer.setData('text/plain', script.id);
-        state.draggingConteScript.value = script;
+        uiStore.draggingConteScript = script;
     };
 
     const dragEndConteScript = () => {
-        state.draggingConteScript.value = null;
-        state.isConteDropTarget.value = null;
+        uiStore.draggingConteScript = null;
+        uiStore.isConteDropTarget = null;
     };
 
     const dragOverConteScript = (targetId) => {
-        if (state.draggingDrawingIndex.value !== null) return;
-        if (!state.draggingConteScript.value) return;
-        if (state.isConteDropTarget.value !== targetId) state.isConteDropTarget.value = targetId;
+        if (uiStore.draggingDrawingIndex !== null) return;
+        if (!uiStore.draggingConteScript) return;
+        if (uiStore.isConteDropTarget !== targetId) uiStore.isConteDropTarget = targetId;
     };
 
     const dropOnConteScript = (targetScript) => {
-        const sourceScriptRef = state.draggingConteScript.value;
+        const sourceScriptRef = uiStore.draggingConteScript;
         if (!sourceScriptRef || sourceScriptRef.id === targetScript.id) return;
 
-        const scripts = state.pages.value[state.activePageIndex.value].scripts;
+        const scripts = pageStore.pages[pageStore.activePageIndex].scripts;
         const srcIdx = scripts.findIndex(s => s.id === sourceScriptRef.id);
 
         if (srcIdx > -1) {
@@ -96,16 +97,16 @@ window.MangaApp.createDragConte = function (deps) {
             scripts.splice(targetIdx, 0, item);
         }
 
-        state.draggingConteScript.value = null;
-        state.isConteDropTarget.value = null;
+        uiStore.draggingConteScript = null;
+        uiStore.isConteDropTarget = null;
     };
 
     const dropOnConteDrawing = (drawingId) => {
-        const sourceScriptRef = state.draggingConteScript.value;
+        const sourceScriptRef = uiStore.draggingConteScript;
         if (!sourceScriptRef) return;
 
-        const pIdx = state.activePageIndex.value;
-        const scripts = state.pages.value[pIdx].scripts;
+        const pIdx = pageStore.activePageIndex;
+        const scripts = pageStore.pages[pIdx].scripts;
         const srcIdx = scripts.findIndex(s => s.id === sourceScriptRef.id);
 
         if (srcIdx > -1) {
@@ -121,7 +122,7 @@ window.MangaApp.createDragConte = function (deps) {
             }
 
             if (insertIndex === -1) {
-                const drawings = state.pages.value[pIdx].drawings;
+                const drawings = pageStore.pages[pIdx].drawings;
                 const currentDrawingIdx = drawings.findIndex(d => d.id === drawingId);
                 for (let d = currentDrawingIdx - 1; d >= 0; d--) {
                     const prevDId = drawings[d].id;
@@ -139,15 +140,15 @@ window.MangaApp.createDragConte = function (deps) {
             scripts.splice(insertIndex, 0, item);
         }
 
-        state.draggingConteScript.value = null;
-        state.isConteDropTarget.value = null;
+        uiStore.draggingConteScript = null;
+        uiStore.isConteDropTarget = null;
     };
 
     const dropOnConteUnassigned = () => {
-        const sourceScriptRef = state.draggingConteScript.value;
+        const sourceScriptRef = uiStore.draggingConteScript;
         if (!sourceScriptRef) return;
 
-        const scripts = state.pages.value[state.activePageIndex.value].scripts;
+        const scripts = pageStore.pages[pageStore.activePageIndex].scripts;
         const srcIdx = scripts.findIndex(s => s.id === sourceScriptRef.id);
 
         if (srcIdx > -1) {
@@ -156,8 +157,8 @@ window.MangaApp.createDragConte = function (deps) {
             scripts.push(item);
         }
 
-        state.draggingConteScript.value = null;
-        state.isConteDropTarget.value = null;
+        uiStore.draggingConteScript = null;
+        uiStore.isConteDropTarget = null;
     };
 
     return {

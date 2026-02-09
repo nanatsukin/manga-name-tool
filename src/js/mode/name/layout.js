@@ -2,11 +2,12 @@
 window.MangaApp = window.MangaApp || {};
 
 window.MangaApp.createLayout = function (deps) {
-    const state = deps.state;
+    const pageStore = deps.pageStore;
+    const configStore = deps.configStore;
+    const uiStore = deps.uiStore;
+    const historyStore = deps.historyStore;
     const helpers = deps.helpers;
-    const history = deps.history;
     const canvas = deps.canvas;
-    const computedProps = deps.computed;
 
     // Layout interaction state
     let interactTarget = null;
@@ -23,7 +24,7 @@ window.MangaApp.createLayout = function (deps) {
         startX = pos.x;
         startY = pos.y;
 
-        if (state.isImageEditMode.value && item.inner) {
+        if (uiStore.isImageEditMode && item.inner) {
             startValX = item.inner.x || 0;
             startValY = item.inner.y || 0;
             document.addEventListener('mousemove', onImageDrag);
@@ -32,7 +33,7 @@ window.MangaApp.createLayout = function (deps) {
             startValX = item.layout.x;
             startValY = item.layout.y;
             linkedItems = [];
-            const page = state.pages.value.find(p => p.drawings.some(d => d.id === item.id));
+            const page = pageStore.pages.find(p => p.drawings.some(d => d.id === item.id));
             if (page) {
                 const scripts = page.scripts.filter(s => s.drawingId === item.id);
                 linkedItems = scripts.map(s => ({ item: s, startX: s.layout.x, startY: s.layout.y }));
@@ -54,8 +55,8 @@ window.MangaApp.createLayout = function (deps) {
 
         const w = interactTarget.layout.w || 50;
         const h = interactTarget.layout.h || 50;
-        newX = Math.max(0, Math.min(computedProps.displayW.value - w, newX));
-        newY = Math.max(0, Math.min(computedProps.displayH.value - h, newY));
+        newX = Math.max(0, Math.min(configStore.displayW - w, newX));
+        newY = Math.max(0, Math.min(configStore.displayH - h, newY));
         interactTarget.layout.x = newX;
         interactTarget.layout.y = newY;
 
@@ -65,8 +66,8 @@ window.MangaApp.createLayout = function (deps) {
             linkedItems.forEach(link => {
                 let lx = link.startX + dx;
                 let ly = link.startY + dy;
-                lx = Math.max(-50, Math.min(computedProps.displayW.value + 50, lx));
-                ly = Math.max(-50, Math.min(computedProps.displayH.value + 50, ly));
+                lx = Math.max(-50, Math.min(configStore.displayW + 50, lx));
+                ly = Math.max(-50, Math.min(configStore.displayH + 50, ly));
                 link.item.layout.x = lx;
                 link.item.layout.y = ly;
             });
@@ -83,7 +84,7 @@ window.MangaApp.createLayout = function (deps) {
     };
 
     const onImageWheel = (e, item) => {
-        if (!state.isImageEditMode.value || !state.selectedItemId.value === item.id) return;
+        if (!uiStore.isImageEditMode || !uiStore.selectedItemId === item.id) return;
         if (!item.inner) item.inner = { scale: 1, x: 0, y: 0 };
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         item.inner.scale = Math.max(0.1, (item.inner.scale || 1) + delta);
@@ -127,8 +128,8 @@ window.MangaApp.createLayout = function (deps) {
         else if (activeHandleType === 'tl') { newW = Math.max(20, startW - dx); newH = Math.max(20, startH - dy); newX = startValX + (startW - newW); newY = startValY + (startH - newH); }
         if (newX < 0) { newW += newX; newX = 0; }
         if (newY < 0) { newH += newY; newY = 0; }
-        if (newX + newW > computedProps.displayW.value) newW = computedProps.displayW.value - newX;
-        if (newY + newH > computedProps.displayH.value) newH = computedProps.displayH.value - newY;
+        if (newX + newW > configStore.displayW) newW = configStore.displayW - newX;
+        if (newY + newH > configStore.displayH) newH = configStore.displayH - newY;
         interactTarget.layout.x = newX;
         interactTarget.layout.y = newY;
         interactTarget.layout.w = newW;
@@ -147,43 +148,43 @@ window.MangaApp.createLayout = function (deps) {
         document.removeEventListener('mouseup', stopInteract);
         document.removeEventListener('touchend', stopInteract);
 
-        if (state.currentMode.value === 'name' && wasInteracting) {
-            history.recordNameHistory();
+        if (pageStore.currentMode === 'name' && wasInteracting) {
+            historyStore.recordNameHistory();
         }
     };
 
     const moveItemPage = (pageIdx, type, itemIdx, dir) => {
         const targetPageIdx = pageIdx + dir;
-        if (targetPageIdx >= 0 && targetPageIdx < state.pages.value.length) {
-            const item = state.pages.value[pageIdx][type].splice(itemIdx, 1)[0];
-            state.pages.value[targetPageIdx][type].push(item);
-            history.recordNameHistory();
+        if (targetPageIdx >= 0 && targetPageIdx < pageStore.pages.length) {
+            const item = pageStore.pages[pageIdx][type].splice(itemIdx, 1)[0];
+            pageStore.pages[targetPageIdx][type].push(item);
+            historyStore.recordNameHistory();
         }
     };
 
     const moveDrawingPage = async (pageIdx, drawingIdx, dir) => {
         const targetPageIdx = pageIdx + dir;
-        if (targetPageIdx >= 0 && targetPageIdx < state.pages.value.length) {
+        if (targetPageIdx >= 0 && targetPageIdx < pageStore.pages.length) {
             await canvas.saveAllCanvases();
-            const drawing = state.pages.value[pageIdx].drawings.splice(drawingIdx, 1)[0];
-            if (dir === -1) state.pages.value[targetPageIdx].drawings.push(drawing);
-            else state.pages.value[targetPageIdx].drawings.unshift(drawing);
-            const relatedScripts = state.pages.value[pageIdx].scripts.filter(s => s.drawingId === drawing.id);
-            for (let i = state.pages.value[pageIdx].scripts.length - 1; i >= 0; i--) {
-                if (state.pages.value[pageIdx].scripts[i].drawingId === drawing.id) {
-                    state.pages.value[pageIdx].scripts.splice(i, 1);
+            const drawing = pageStore.pages[pageIdx].drawings.splice(drawingIdx, 1)[0];
+            if (dir === -1) pageStore.pages[targetPageIdx].drawings.push(drawing);
+            else pageStore.pages[targetPageIdx].drawings.unshift(drawing);
+            const relatedScripts = pageStore.pages[pageIdx].scripts.filter(s => s.drawingId === drawing.id);
+            for (let i = pageStore.pages[pageIdx].scripts.length - 1; i >= 0; i--) {
+                if (pageStore.pages[pageIdx].scripts[i].drawingId === drawing.id) {
+                    pageStore.pages[pageIdx].scripts.splice(i, 1);
                 }
             }
-            state.pages.value[targetPageIdx].scripts.push(...relatedScripts);
-            if (state.currentMode.value === 'name') history.recordNameHistory();
+            pageStore.pages[targetPageIdx].scripts.push(...relatedScripts);
+            if (pageStore.currentMode === 'name') historyStore.recordNameHistory();
         }
     };
 
     // Auto layout
     const autoLayoutCurrentPage = () => {
-        const pIdx = state.activePageIndex.value;
-        const page = state.pages.value[pIdx];
-        const config = state.pageConfig.value;
+        const pIdx = pageStore.activePageIndex;
+        const page = pageStore.pages[pIdx];
+        const config = configStore.pageConfig;
         const scale = config.scale;
 
         if (!page) return;
@@ -260,7 +261,7 @@ window.MangaApp.createLayout = function (deps) {
                 script.layout.fontSize = config.defaultFontSize || 18;
             }
         });
-        history.recordNameHistory();
+        historyStore.recordNameHistory();
     };
 
     return {
