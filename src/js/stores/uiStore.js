@@ -37,6 +37,9 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
     /** ハンバーガーメニューの開閉状態。 */
     /** @type {VueRef<boolean>} */
     const isMenuOpen = ref(false);
+    /** 出力・連携ドロップダウンの開閉状態。 */
+    /** @type {VueRef<boolean>} */
+    const showOutputMenu = ref(false);
     /** ウィンドウ幅が見開き2ページ表示に足りない小画面かどうか。 */
     /** @type {VueRef<boolean>} */
     const isSmallScreen = ref(false);
@@ -175,7 +178,7 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
         showSettings, showTextModal, showExportModal, showDrawingModal,
         currentEditingDrawing, modalCanvasRef,
         selectedItemId, copiedPageId,
-        isMenuOpen, isSmallScreen,
+        isMenuOpen, showOutputMenu, isSmallScreen,
         saveStatus, saveStatusText, isRestoring, isProcessing, isExporting,
         progress, progressMessage,
         get autoSaveTimer() { return autoSaveTimer; },

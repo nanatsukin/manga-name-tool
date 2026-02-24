@@ -164,71 +164,143 @@
             </div>
         </div>
 
-        <header class="bg-gray-800 border-b border-gray-700 min-h-[40px] flex flex-col z-50 shrink-0 relative">
+        <header class="bg-gray-800 border-b border-gray-700 flex flex-col z-50 shrink-0 relative">
 
-            <div class="flex justify-between items-center h-10 px-2 w-full">
-                <div class="flex items-center min-w-0">
-                    <h1 class="text-sm font-bold text-blue-400 flex items-center gap-2 shrink-0 mr-2">
-                        <i class="fas fa-pen-nib"></i> <span class="hidden xs:inline">Manga Studio</span>
-                    </h1>
-                    <div class="save-status-indicator text-[10px] whitespace-nowrap overflow-hidden"
-                        :class="{'opacity-50': saveStatus === 'idle', 'text-yellow-400': saveStatus === 'saving', 'text-green-400': saveStatus === 'saved', 'text-red-500': saveStatus === 'error'}">
-                        <i class="fas"
-                            :class="{'fa-circle-notch fa-spin': saveStatus === 'saving', 'fa-check': saveStatus === 'saved', 'fa-times': saveStatus === 'error', 'fa-save': saveStatus === 'idle'}"></i>
-                        {{ saveStatusText }}
-                    </div>
+            <!-- Layer A: システム・管理 -->
+            <div class="grid grid-cols-3 items-center h-10 px-2 w-full">
+                <!-- 左: 保存ステータス -->
+                <div class="save-status-indicator text-[10px] whitespace-nowrap overflow-hidden"
+                    :class="{'opacity-50': saveStatus === 'idle', 'text-yellow-400': saveStatus === 'saving', 'text-green-400': saveStatus === 'saved', 'text-red-500': saveStatus === 'error'}">
+                    <i class="fas"
+                        :class="{'fa-circle-notch fa-spin': saveStatus === 'saving', 'fa-check': saveStatus === 'saved', 'fa-times': saveStatus === 'error', 'fa-save': saveStatus === 'idle'}"></i>
+                    {{ saveStatusText }}
                 </div>
 
-                <div class="hidden md:flex items-center space-x-1 text-xs font-medium h-full">
+                <!-- 中央: 工程タブ -->
+                <div class="hidden md:flex justify-center items-center text-xs font-medium h-full">
                     <button @click="changeMode('plot')"
                         :class="{'tab-active': currentMode === 'plot', 'text-gray-400': currentMode !== 'plot'}"
-                        class="px-3 hover:text-white transition h-full">1. プロット</button>
+                        class="px-3 hover:text-white transition h-full">プロット</button>
                     <button @click="changeMode('conte')"
                         :class="{'tab-active': currentMode === 'conte', 'text-gray-400': currentMode !== 'conte'}"
-                        class="px-3 hover:text-white transition h-full">2. コンテ</button>
+                        class="px-3 hover:text-white transition h-full">コンテ</button>
                     <button @click="changeMode('name')"
                         :class="{'tab-active': currentMode === 'name', 'text-gray-400': currentMode !== 'name'}"
-                        class="px-3 hover:text-white transition h-full">3. ネーム</button>
-
-                    <div class="w-px h-4 bg-gray-600 mx-2 self-center"></div>
-
-                    <button @click="showSettings = true"
-                        class="bg-gray-700 hover:bg-gray-600 text-white px-2 py-0.5 rounded transition flex items-center gap-1"><i
-                            class="fas fa-cog"></i> 設定</button>
-                    <button @click="saveProject"
-                        class="bg-green-700 hover:bg-green-600 text-white px-2 py-0.5 rounded transition flex items-center gap-1">
-                        <i class="fas" :class="currentFileHandle ? 'fa-save' : 'fa-file-export'"></i> {{
-                        currentFileHandle ? '上書き' : '保存' }}
-                    </button>
-                    <button @click="saveProjectAs"
-                        class="bg-green-800 hover:bg-green-700 text-white px-2 py-0.5 rounded transition flex items-center gap-1"
-                        v-if="currentFileHandle"><i class="fas fa-file-export"></i> 別名</button>
-                    <button @click="loadProjectFromFile"
-                        class="bg-gray-600 hover:bg-gray-500 text-white px-2 py-0.5 rounded transition flex items-center gap-1"><i
-                            class="fas fa-folder-open"></i> 読込</button>
-                    <div class="w-px h-4 bg-gray-600 mx-1 self-center"></div>
-                    <button @click="showTextModal = true"
-                        class="bg-yellow-600 hover:bg-yellow-500 text-white px-2 py-0.5 rounded transition flex items-center gap-1"><i
-                            class="fas fa-clipboard"></i> テキスト</button>
-                    <button @click="copyAllPlots"
-                        class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-0.5 rounded transition flex items-center gap-1">
-                        <i class="fas fa-file-alt"></i> プロット一括
-                    </button>
-                    <button @click="openExportModal" :disabled="isExporting"
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-2 py-0.5 rounded transition"><i class="fas"
-                            :class="isExporting ? 'fa-spinner fa-spin' : 'fa-file-export'"></i> 書き出し</button>
-
-                    <button v-if="currentMode === 'name'" @click="addNoteToCurrentPage"
-                        class="bg-red-600 hover:bg-red-500 text-white px-2 py-0.5 rounded transition ml-2 shadow-sm border border-red-400">
-                        <i class="fas fa-sticky-note"></i> ＋注意書き</button>
+                        class="px-3 hover:text-white transition h-full">ネーム</button>
                 </div>
 
+                <!-- 右: システムアクション (デスクトップ) -->
+                <div class="hidden md:flex justify-end items-center gap-1">
+                    <!-- 出力・連携 ドロップダウン -->
+                    <div class="relative">
+                        <button @click="showOutputMenu = !showOutputMenu"
+                            class="border border-gray-500 text-gray-300 hover:bg-gray-700 px-2 py-1 rounded text-xs flex items-center gap-1 transition">
+                            出力・連携 <i class="fas fa-chevron-down text-[9px]"></i>
+                        </button>
+                        <div v-if="showOutputMenu" @click="showOutputMenu = false" class="fixed inset-0 z-40"></div>
+                        <div v-show="showOutputMenu" class="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 min-w-[180px] py-1">
+                            <button @click="openExportModal(); showOutputMenu = false"
+                                class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2 transition">
+                                <i class="fas fa-file-image text-gray-400 w-4"></i> 画像(PNG/JPG)出力
+                            </button>
+                            <button @click="showTextModal = true; showOutputMenu = false"
+                                class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2 transition">
+                                <i class="fas fa-clipboard text-gray-400 w-4"></i> クリスタ用セリフ出力
+                            </button>
+                            <button @click="copyAllPlots(); showOutputMenu = false"
+                                class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2 transition">
+                                <i class="fas fa-file-alt text-gray-400 w-4"></i> プロットを全コピー
+                            </button>
+                            <template v-if="currentFileHandle">
+                                <div class="border-t border-gray-700 my-1"></div>
+                                <button @click="saveProjectAs(); showOutputMenu = false"
+                                    class="w-full text-left px-3 py-1.5 text-xs text-gray-400 hover:bg-gray-700 flex items-center gap-2 transition">
+                                    <i class="fas fa-file-export text-gray-500 w-4"></i> 別名保存
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- 読込 (アイコンのみ) -->
+                    <button @click="loadProjectFromFile" title="読込"
+                        class="text-gray-400 hover:text-white hover:bg-gray-700 p-1.5 rounded transition">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+
+                    <!-- 保存 (アイコンのみ, Primary) -->
+                    <button @click="saveProject" :title="currentFileHandle ? '上書き保存' : '保存'"
+                        class="bg-green-700 hover:bg-green-600 text-white p-1.5 rounded transition">
+                        <i class="fas" :class="currentFileHandle ? 'fa-save' : 'fa-file-export'"></i>
+                    </button>
+
+                    <!-- 設定 (アイコンのみ) -->
+                    <button @click="showSettings = true" title="設定"
+                        class="text-gray-400 hover:text-white hover:bg-gray-700 p-1.5 rounded transition">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+
+                <!-- ハンバーガー (モバイル) -->
                 <button @click="isMenuOpen = !isMenuOpen"
                     class="md:hidden text-gray-300 hover:text-white px-3 py-2 focus:outline-none">
                     <i class="fas text-lg" :class="isMenuOpen ? 'fa-times' : 'fa-bars'"></i>
                 </button>
             </div>
 
+            <!-- Layer B: 工程ツールバー (デスクトップのみ) -->
+            <div class="hidden md:flex justify-center items-center h-8 px-2 gap-2 border-t border-gray-700 bg-gray-900">
+                <!-- プロットモード -->
+                <template v-if="currentMode === 'plot'">
+                    <button @click="sortAllScriptsByConteOrder"
+                        class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                        <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
+                    </button>
+                </template>
+
+                <!-- コンテモード -->
+                <template v-else-if="currentMode === 'conte'">
+                    <button @click="prevPage" :disabled="activePageIndex === 0"
+                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <span class="text-xs text-gray-300 w-20 text-center">Page {{ activePageIndex + 1 }}</span>
+                    <button @click="nextPage" :disabled="activePageIndex === pages.length - 1"
+                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="w-px h-4 bg-gray-600 mx-1"></div>
+                    <button @click="addDrawing(activePageIndex)"
+                        class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                        <i class="fas fa-plus"></i> コマ追加
+                    </button>
+                    <button @click="clearCurrentPageCanvas"
+                        class="border border-gray-600 text-red-400 hover:bg-red-900/40 hover:border-red-700 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                        <i class="fas fa-trash-can"></i> 全消去
+                    </button>
+                </template>
+
+                <!-- ネームモード -->
+                <template v-else-if="currentMode === 'name'">
+                    <button @click="autoLayoutCurrentPage"
+                        class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                        <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
+                    </button>
+                    <button @click="undoName()" title="元に戻す"
+                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
+                        <i class="fas fa-rotate-left text-sm"></i>
+                    </button>
+                    <button @click="redoName()" title="やり直す"
+                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
+                        <i class="fas fa-rotate-right text-sm"></i>
+                    </button>
+                    <button @click="addNoteToCurrentPage"
+                        class="text-gray-500 hover:text-gray-300 px-2 py-1 rounded text-xs transition flex items-center gap-1">
+                        <i class="fas fa-sticky-note"></i> ＋注意書き
+                    </button>
+                </template>
+            </div>
+
+            <!-- モバイルメニュー -->
             <div v-if="isMenuOpen"
                 class="md:hidden absolute top-10 left-0 w-full bg-gray-800 border-b border-gray-600 shadow-xl flex flex-col p-2 space-y-2 z-50">
 
@@ -251,25 +323,26 @@
                         currentFileHandle ? '上書き保存' : '保存' }}
                     </button>
                     <button @click="loadProjectFromFile(); isMenuOpen=false"
-                        class="bg-gray-600 text-white py-2 rounded text-xs flex items-center justify-center gap-2">
+                        class="bg-gray-700 text-white py-2 rounded text-xs flex items-center justify-center gap-2">
                         <i class="fas fa-folder-open"></i> 読込
                     </button>
                 </div>
 
-                <div class="grid grid-cols-3 gap-2 border-t border-gray-700 pt-2">
+                <div class="grid grid-cols-2 gap-2 border-t border-gray-700 pt-2">
                     <button @click="showSettings = true; isMenuOpen=false"
                         class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-cog"></i> 設定</button>
-                    <button @click="showTextModal = true; isMenuOpen=false"
-                        class="bg-yellow-700 text-white py-1.5 rounded text-xs"><i class="fas fa-clipboard"></i>
-                        テキスト</button>
-                    <button @click="copyAllPlots(); isMenuOpen=false"
-                        class="bg-indigo-700 text-white py-1.5 rounded text-xs">
-                        <i class="fas fa-file-alt"></i> プロット一括
-                    </button>
                     <button @click="openExportModal(); isMenuOpen=false"
-                        class="bg-blue-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-export"></i>
-                        書き出し</button>
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-image"></i> 画像出力</button>
+                    <button @click="showTextModal = true; isMenuOpen=false"
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-clipboard"></i> セリフ出力</button>
+                    <button @click="copyAllPlots(); isMenuOpen=false"
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-alt"></i> プロット全コピー</button>
                 </div>
+
+                <button v-if="currentMode === 'name'" @click="addNoteToCurrentPage(); isMenuOpen=false"
+                    class="text-gray-400 py-1.5 rounded text-xs text-center border border-gray-600">
+                    <i class="fas fa-sticky-note"></i> ＋注意書き
+                </button>
             </div>
         </header>
 
@@ -368,15 +441,6 @@
 
             <div v-if="currentMode === 'plot'" class="h-full overflow-y-auto pb-20">
                 <div class="max-w-6xl mx-auto p-0 md:p-4">
-                    <!-- プロット全体操作ヘッダー -->
-                    <div
-                        class="bg-gray-800 p-2 mb-4 rounded border border-gray-700 flex justify-between items-center shadow-md mx-2 md:mx-0 sticky top-0 z-30">
-                        <span class="text-sm font-bold text-gray-300 pl-2"><i class="fas fa-list"></i> プロット編集</span>
-                        <button @click="sortAllScriptsByConteOrder"
-                            class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs px-3 py-1.5 rounded shadow transition flex items-center gap-2">
-                            <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
-                        </button>
-                    </div>
 
                     <div v-for="(page, pIndex) in pages" :key="page.id" class="mb-6"
                         :data-plot-page-idx="pIndex">
@@ -386,10 +450,10 @@
                                     class="fas fa-file-alt text-gray-400"></i> Page {{ pIndex + 1 }}</div>
                             <div class="flex gap-2">
                                 <button @click="addScript(pIndex)"
-                                    class="bg-blue-600 hover:bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded"><i
+                                    class="bg-blue-700 hover:bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded"><i
                                         class="fas fa-plus"></i> 追加</button>
                                 <button @click="deletePage(pIndex)"
-                                    class="text-gray-400 hover:text-orange-400 text-[10px] px-2" v-if="pIndex > 0"
+                                    class="text-gray-400 hover:text-gray-200 text-[10px] px-2" v-if="pIndex > 0"
                                     title="前のページと結合">
                                     <i class="fas fa-sign-in-alt fa-rotate-270"></i> ページ結合
                                 </button>
@@ -540,25 +604,6 @@
             </div>
 
             <div v-if="currentMode === 'conte'" class="h-full flex flex-col bg-gray-900">
-                <div
-                    class="bg-gray-800 p-2 flex gap-4 shadow items-center justify-center shrink-0 border-b border-gray-700">
-                    <button @click="prevPage" :disabled="activePageIndex === 0"
-                        class="px-3 py-1 bg-gray-700 rounded disabled:opacity-30 hover:bg-gray-600 transition"><i
-                            class="fas fa-chevron-left"></i></button>
-                    <span class="font-bold w-24 text-center text-sm text-gray-200">Page {{ activePageIndex + 1 }}</span>
-                    <button @click="nextPage" :disabled="activePageIndex === pages.length - 1"
-                        class="px-3 py-1 bg-gray-700 rounded disabled:opacity-30 hover:bg-gray-600 transition"><i
-                            class="fas fa-chevron-right"></i></button>
-                    <div class="border-l border-gray-600 h-6 mx-2"></div>
-                    <button @click="clearCurrentPageCanvas"
-                        class="px-3 py-1 rounded bg-red-900 hover:bg-red-800 text-xs ml-4"><i
-                            class="fas fa-trash-can"></i> 全消去</button>
-
-                    <button @click="addDrawing(activePageIndex)"
-                        class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-500 shadow"><i
-                            class="fas fa-plus"></i> コマ追加</button>
-                </div>
-
                 <div class="conte-body flex-1 overflow-hidden flex">
                     <div
                         class="conte-panel-area flex-1 overflow-y-auto p-6 bg-gray-800 border-r border-gray-700 flex flex-col items-center scroll-smooth">
@@ -687,19 +732,6 @@
             <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-600 p-8"
                 @mousedown="selectItem(null)">
 
-                <div class="fixed bottom-8 right-8 z-[100] no-export flex flex-col gap-3 items-end">
-                    <div class="flex gap-2">
-                        <button @click="undoName()" class="bg-gray-800 hover:bg-gray-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center border border-gray-600 transition active:scale-95" title="元に戻す">
-                            <i class="fas fa-rotate-left"></i>
-                        </button>
-                        <button @click="redoName()" class="bg-gray-800 hover:bg-gray-700 text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center border border-gray-600 transition active:scale-95" title="やり直す">
-                            <i class="fas fa-rotate-right"></i>
-                        </button>
-                    </div>
-                    <button @click="autoLayoutCurrentPage" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-full shadow-lg font-bold flex items-center gap-2 border-2 border-white transition-transform active:scale-95 opacity-90 hover:opacity-100">
-                        <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
-                    </button>
-                </div>
 
                 <div class="flex flex-col items-center origin-top pb-20">
                     <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container"

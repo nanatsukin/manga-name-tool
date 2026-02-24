@@ -345,6 +345,7 @@ const app = createApp({
             isTransparentMode: uiRefs.isTransparentMode,
             showExportModal: uiRefs.showExportModal,
             isMenuOpen: uiRefs.isMenuOpen,
+            showOutputMenu: uiRefs.showOutputMenu,
             fileInput: uiRefs.fileInput,
             nameModeContainer: uiRefs.nameModeContainer,
             progress: uiRefs.progress,
