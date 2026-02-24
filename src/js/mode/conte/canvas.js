@@ -1,4 +1,4 @@
-// js/mode/conte/canvas.js - Canvas drawing, modal, save/restore
+// js/mode/conte/canvas.js - コンテモードの Canvas 描画・モーダル・保存・復元
 window.MangaApp = window.MangaApp || {};
 
 /** @param {CanvasModuleDeps} deps @returns {CanvasModuleInstance} */
@@ -15,7 +15,11 @@ window.MangaApp.createCanvas = function (deps) {
     /** @type {CanvasUtils} */
     const canvasUtils = deps.canvasUtils;
 
-    /** @returns {Promise<void>} */
+    /**
+     * 全ページの全 Drawing の Canvas 内容を Blob として保存する。
+     * モード切替前やエクスポート前に呼び出して、描画データを imgSrc/cachedBlob に確定させる。
+     * @returns {Promise<void>}
+     */
     const saveAllCanvases = async () => {
         /** @type {Promise<void>[]} */
         const promises = [];
@@ -28,9 +32,15 @@ window.MangaApp.createCanvas = function (deps) {
         await Promise.all(promises);
     };
 
-    // Restore all canvases (with retry)
+    /**
+     * アクティブページの全 Drawing の Canvas に imgSrc から画像を復元する。
+     * Canvas 要素が DOM に追加されるまで最大10回（50ms間隔）リトライする。
+     * ページ遷移やモード切替後に呼び出す。
+     */
     const restoreAllCanvases = async () => {
         await nextTick();
+
+        // Canvas 要素が DOM に存在するか確認しながらリトライする
         const tryRestore = (count = 0) => {
             const pageData = pageStore.pages[pageStore.activePageIndex];
             if (!pageData) return;
@@ -38,12 +48,15 @@ window.MangaApp.createCanvas = function (deps) {
             let allDone = true;
             pageData.drawings.forEach(d => {
                 if (d.imgSrc && uiStore.canvasRefs[d.id]) {
+                    // Canvas 要素が存在する → 描画を復元
                     historyStore.drawToCanvas(d, d.imgSrc);
                 } else if (d.imgSrc && !uiStore.canvasRefs[d.id]) {
+                    // imgSrc はあるが Canvas 要素がまだ存在しない → リトライ対象
                     allDone = false;
                 }
             });
 
+            // 未完了の描画があり、リトライ上限に達していなければ 50ms 後に再試行
             if (!allDone && count < 10) {
                 setTimeout(() => tryRestore(count + 1), 50);
             }
@@ -51,8 +64,13 @@ window.MangaApp.createCanvas = function (deps) {
         tryRestore();
     };
 
-    /** @param {Drawing} drawing @returns {Promise<void>} */
+    /**
+     * 描画モーダルを開く。モーダルを開く前に全 Canvas を保存し、
+     * モーダル Canvas に既存の描画内容を読み込む。
+     * @param {Drawing} drawing @returns {Promise<void>}
+     */
     const openDrawingModal = async (drawing) => {
+        // モーダルを開く前に現在の Canvas 状態を保存する
         await saveAllCanvases();
         uiStore.currentEditingDrawing = drawing;
         uiStore.showDrawingModal = true;
@@ -61,6 +79,7 @@ window.MangaApp.createCanvas = function (deps) {
 
         const canvas = uiStore.modalCanvasRef;
         if (canvas && drawing.imgSrc) {
+            // 既存の描画内容をモーダル Canvas に転写する
             const ctx = canvas.getContext('2d');
             const img = new Image();
             img.onload = () => {
@@ -69,18 +88,23 @@ window.MangaApp.createCanvas = function (deps) {
             };
             img.src = drawing.imgSrc;
         } else if (canvas) {
+            // 新規 Drawing は白背景で初期化する
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
     };
 
-    // Close drawing modal
+    /**
+     * 描画モーダルを閉じる。
+     * モーダル Canvas の現在の状態を Blob として保存してから閉じる。
+     */
     const closeDrawingModal = () => {
         const drawing = uiStore.currentEditingDrawing;
         const canvas = uiStore.modalCanvasRef;
 
         if (drawing && canvas) {
+            // モーダルを閉じる前に最終状態を履歴に保存する
             canvas.toBlob(blob => {
                 canvasUtils.pushDrawingHistory(drawing, blob);
                 uiStore.showDrawingModal = false;
@@ -92,6 +116,8 @@ window.MangaApp.createCanvas = function (deps) {
     };
 
     /**
+     * ポインターダウン時の描画開始処理。
+     * isDrawing フラグを立て、最初のポインター位置を記録する。
      * @param {MouseEvent | TouchEvent} e
      * @param {Drawing} drawing
      */
@@ -107,6 +133,9 @@ window.MangaApp.createCanvas = function (deps) {
     };
 
     /**
+     * ポインタームーブ時の描画処理。
+     * 直前の座標から現在の座標まで線を引く。
+     * ツールに応じてペン（黒・3px）またはイレーサー（白・20px）で描画する。
      * @param {MouseEvent | TouchEvent} e
      * @param {Drawing} drawing
      */
@@ -121,6 +150,7 @@ window.MangaApp.createCanvas = function (deps) {
         const x = pos.x - rect.left;
         const y = pos.y - rect.top;
 
+        // 直前の座標から現在座標まで連続した線を描画する
         ctx.beginPath();
         ctx.moveTo(uiStore.lastPos.x, uiStore.lastPos.y);
         ctx.lineTo(x, y);
@@ -133,7 +163,11 @@ window.MangaApp.createCanvas = function (deps) {
         uiStore.lastPos.y = y;
     };
 
-    /** @param {Drawing} [drawing] */
+    /**
+     * ポインターアップ時の描画終了処理。
+     * 描画内容を historyStore に保存する。
+     * @param {Drawing} [drawing]
+     */
     const stopDraw = (drawing) => {
         if (uiStore.isDrawing) {
             uiStore.isDrawing = false;
@@ -144,6 +178,10 @@ window.MangaApp.createCanvas = function (deps) {
         }
     };
 
+    /**
+     * アクティブページの全 Drawing の Canvas を白紙にクリアする。
+     * 実行前に確認ダイアログを表示する。
+     */
     const clearCurrentPageCanvas = () => {
         if (!confirm('全消去しますか？')) return;
         pageStore.pages[pageStore.activePageIndex].drawings.forEach(d => {
@@ -153,18 +191,26 @@ window.MangaApp.createCanvas = function (deps) {
         });
     };
 
-    /** @param {KeyboardEvent} e */
+    /**
+     * グローバルキーボードショートカットの処理（Ctrl+Z/Ctrl+Y/Ctrl+Shift+Z）。
+     * コンテモード以外、または最後にアクティブだった Drawing がない場合は何もしない。
+     * @param {KeyboardEvent} e
+     */
     const handleGlobalKeydown = (e) => {
         if (pageStore.currentMode !== 'conte') return;
         if (!uiStore.lastActiveDrawingId) return;
+
+        // 最後にアクティブだった Drawing を全ページから検索する
         let targetDrawing = null;
         for (const page of pageStore.pages) {
             targetDrawing = page.drawings.find(d => d.id === uiStore.lastActiveDrawingId);
             if (targetDrawing) break;
         }
         if (!targetDrawing) return;
+
         if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
             e.preventDefault();
+            // Shift+Z は Redo、単体 Z は Undo
             e.shiftKey ? historyStore.redo(targetDrawing) : historyStore.undo(targetDrawing);
         } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || e.key === 'Y')) {
             e.preventDefault();

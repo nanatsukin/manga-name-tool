@@ -4,6 +4,8 @@ window.MangaApp = window.MangaApp || {};
 /** @type {DndUtils} */
 window.MangaApp.dndUtils = {
     /**
+     * 配列の要素を fromIndex から toIndex へ移動する（破壊的操作）。
+     * splice を2回使ってインプレースで並び替える。
      * @param {any[]} array
      * @param {number} fromIndex
      * @param {number} toIndex
@@ -14,6 +16,8 @@ window.MangaApp.dndUtils = {
     },
 
     /**
+     * マウスとタッチの両方に対応したポインタイベントリスナーを document に登録する。
+     * touchmove は passive: false でデフォルト動作（スクロール）をキャンセルできるようにする。
      * @param {(e: Event) => void} moveHandler
      * @param {(e: Event) => void} endHandler
      */
@@ -25,6 +29,8 @@ window.MangaApp.dndUtils = {
     },
 
     /**
+     * addPointerListeners で登録したリスナーを document から削除する。
+     * moveHandlers は単一関数または配列のどちらでも受け付ける。
      * @param {((e: Event) => void) | ((e: Event) => void)[]} moveHandlers
      * @param {(e: Event) => void} endHandler
      */
