@@ -36,7 +36,7 @@
         <div v-if="isProcessing" class="loading-overlay">
             <i class="fas fa-spinner fa-spin text-5xl mb-4 text-blue-500"></i>
             <div class="text-xl font-bold tracking-widest animate-pulse">処理中...</div>
-            <div class="text-xl font-bold tracking-widest animate-pulse mb-4">{{ progressMessage || '処理中...' }}</div>
+            <div class="text-xl font-bold tracking-widest animate-pulse mb-4">{{ progressMessage || '' }}</div>
             <div class="w-64 h-2 bg-gray-700 rounded-full overflow-hidden border border-gray-600" v-if="progress > 0">
                 <div class="h-full bg-blue-500 transition-all duration-300 ease-out" :style="{ width: progress + '%' }">
                 </div>
