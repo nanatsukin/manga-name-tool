@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ネーム製作ツール</title>
+    <style>[v-cloak] { display: none !important; }</style>
 
     <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.js"></script>
     <script>
@@ -29,7 +30,7 @@
 
 <body>
 
-    <div id="app" class="h-screen flex flex-col" :class="{'exporting': isExporting}">
+    <div id="app" class="h-screen flex flex-col" v-cloak :class="{'exporting': isExporting}">
         <input type="file" ref="fileInput" accept=".json" style="display: none" @change="handleFileChange">
 
         <div v-if="isProcessing" class="loading-overlay">
@@ -377,7 +378,8 @@
                         </button>
                     </div>
 
-                    <div v-for="(page, pIndex) in pages" :key="page.id" class="mb-6">
+                    <div v-for="(page, pIndex) in pages" :key="page.id" class="mb-6"
+                        :data-plot-page-idx="pIndex">
                         <div
                             class="bg-gray-700 px-3 py-1 flex justify-between items-center sticky top-0 z-20 border-b border-gray-600 rounded-t shadow-md">
                             <div class="font-bold text-sm text-white flex items-center gap-2"><i
@@ -393,6 +395,7 @@
                                 </button>
                             </div>
                         </div>
+                        <template v-if="visiblePlotPageIndices.has(pIndex)">
                         <div class="bg-gray-800 rounded-b overflow-hidden min-h-[40px]"
                             @dragover.prevent="dragOverPage(pIndex)" @drop.prevent="dropOnPage(pIndex)">
                             <div v-if="page.scripts.length === 0"
@@ -522,6 +525,13 @@
                                 </div>
                             </div>
                         </div>
+                        </template>
+                        <template v-else>
+                            <!-- ビューポート外のページ: スクロールで表示される軽量 placeholder -->
+                            <div class="bg-gray-800 rounded-b min-h-[40px] flex items-center px-3 py-2 text-xs text-gray-600">
+                                スクロールで表示 — {{ page.scripts.length }} 件のセリフ
+                            </div>
+                        </template>
                     </div>
                     <button @click="addPage"
                         class="w-full py-3 border border-dashed border-gray-700 text-sm text-gray-500 hover:border-blue-500 hover:text-blue-400 rounded hover:bg-gray-800 transition"><i
@@ -576,6 +586,7 @@
                                     <div class="conte-card-preview relative bg-white group cursor-pointer"
                                         style="width: 360px; height: 240px;" @click="openDrawingModal(drawing)">
                                         <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
+                                            loading="lazy"
                                             class="preview-image w-full h-full object-contain pointer-events-none">
                                         <div v-else class="w-full h-full bg-white"></div>
 
@@ -616,10 +627,10 @@
                                     @dragover.prevent="dragOverConteScript(drawing.id)"
                                     @drop.stop="dropOnConteDrawing(drawing.id)"
                                     :class="{'drop-target-active': isConteDropTarget === drawing.id}">
-                                    <div v-if="getScriptsForDrawing(activePageIndex, drawing.id).length === 0"
+                                    <div v-if="(activePageScriptsByDrawingId[drawing.id] || []).length === 0"
                                         class="absolute inset-0 flex items-center justify-center text-xs text-gray-600 pointer-events-none border-2 border-transparent border-dashed m-2">
                                         ここにセリフをドロップ</div>
-                                    <div v-for="script in getScriptsForDrawing(activePageIndex, drawing.id)"
+                                    <div v-for="script in (activePageScriptsByDrawingId[drawing.id] || [])"
                                         :key="script.id" draggable="true"
                                         @dragstart="dragStartConteScript($event, script)" @dragend="dragEndConteScript"
                                         @dblclick.stop="jumpToPlot(activePageIndex, script)" title="ダブルクリックでプロットへ移動"
@@ -645,11 +656,11 @@
                         <div class="sticky top-0 bg-gray-800 p-3 border-b border-gray-700 shadow-md">
                             <h3 class="text-sm font-bold text-gray-300">未割り当てリスト <span
                                     class="bg-red-900 text-red-200 text-xs px-2 py-0.5 rounded-full ml-2">{{
-                                    getUnassignedScripts(activePageIndex).length }}</span></h3>
+                                    (activePageScriptsByDrawingId['__unassigned__'] || []).length }}</span></h3>
                         </div>
 
                         <div class="p-3 space-y-3 flex-1 pb-10">
-                            <div v-for="script in getUnassignedScripts(activePageIndex)" :key="script.id"
+                            <div v-for="script in (activePageScriptsByDrawingId['__unassigned__'] || [])" :key="script.id"
                                 draggable="true" @dragstart="dragStartConteScript($event, script)"
                                 @dragend="dragEndConteScript" @drop.stop="dropOnConteScript(script)" @dragover.prevent
                                 @dblclick.stop="jumpToPlot(activePageIndex, script)" title="ダブルクリックでプロットへ移動"
@@ -691,7 +702,10 @@
                 </div>
 
                 <div class="flex flex-col items-center origin-top pb-20">
-                    <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container">
+                    <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container"
+                        :data-spread-idx="sIdx"
+                        :style="{ minHeight: pageStyle.height }">
+                        <template v-if="visibleSpreadIndices.has(sIdx)">
                         <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
                             :id="'render-page-' + page.pageIndex" :style="pageStyle"
                             :class="{'hide-for-text-layer': isTextLayerMode, 'hide-guides': isHideGuideMode, 'hide-drawings': isHideDrawingMode, 'force-transparent': isTransparentMode}">
@@ -722,6 +736,7 @@
                                 @wheel.stop.prevent="onImageWheel($event, drawing)">
                                 <div class="absolute inset-0 overflow-hidden pointer-events-none">
                                     <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
+                                        loading="lazy"
                                         class="w-full h-full object-contain select-none opacity-50 grayscale origin-center"
                                         :style="{ transform: `scale(${drawing.inner?.scale || 1}) translate(${drawing.inner?.x || 0}px, ${drawing.inner?.y || 0}px)` }">
                                     <div v-else class="w-full h-full bg-gray-100 opacity-20"></div>
@@ -800,6 +815,14 @@
                         </div>
                         <div v-if="spread.length === 1 && spread[0].pageIndex !== 0"
                             class="manga-page hidden pointer-events-none" :style="pageStyle"></div>
+                        </template>
+                        <template v-else>
+                            <!-- ビューポート外の見開き: id を保持しつつ軽量な placeholder を表示 -->
+                            <div v-for="page in spread" :key="page.id"
+                                :id="'render-page-' + page.pageIndex"
+                                class="manga-page" :style="pageStyle">
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
