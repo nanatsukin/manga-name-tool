@@ -15,9 +15,17 @@ window.MangaApp.stores.usePageStore = Pinia.defineStore('page', () => {
     // Cross-store dependency (injected via setUiStore)
     /** @type {UiStoreInstance | null} */
     let _uiStore = null;
-    /** @param {UiStoreInstance} store */
+    /**
+     * uiStore への参照を注入する（循環依存回避のため setter で後から設定）。
+     * @param {UiStoreInstance} store
+     */
     const setUiStore = (store) => { _uiStore = store; };
 
+    /**
+     * アクティブページのコマ数が多い場合に警告テキストとスタイルクラスを返す computed。
+     * 7コマ以上で黄色警告、9コマ以上で赤警告。
+     * @type {VueComputedRef<{ text: string, class: string } | null>}
+     */
     const drawingCountWarning = computed(() => {
         const page = pages.value[activePageIndex.value];
         if (!page) return null;
@@ -30,13 +38,22 @@ window.MangaApp.stores.usePageStore = Pinia.defineStore('page', () => {
         return null;
     });
 
+    /**
+     * 全ページを見開き単位の配列に変換する computed。
+     * スマートフォンなど小画面では1ページずつの配列を返す。
+     * index 0 のページは単独（右ページ扱い）、以降は2ページずつペアになる。
+     * @type {VueComputedRef<SpreadPage[][]>}
+     */
     const spreads = computed(() => {
         const isSmall = _uiStore ? _uiStore.isSmallScreen : false;
         if (isSmall) {
+            // 小画面：全ページを1枚ずつ独立した見開きとして扱う
             return pages.value.map((page, i) => [{ ...page, pageIndex: i }]);
         }
         const result = [];
+        // index 0 は単独の右ページ（表紙）
         if (pages.value.length > 0) result.push([{ ...pages.value[0], pageIndex: 0 }]);
+        // index 1 以降は 2 ページずつペアリング（奇数=右、偶数=左）
         for (let i = 1; i < pages.value.length; i += 2) {
             const pair = [];
             pair.push({ ...pages.value[i], pageIndex: i });
@@ -46,6 +63,11 @@ window.MangaApp.stores.usePageStore = Pinia.defineStore('page', () => {
         return result;
     });
 
+    /**
+     * 全ページのセリフから登場人物名を重複なく抽出してソートした配列を返す computed。
+     * キャラクター名候補の datalist に使用する。
+     * @type {VueComputedRef<string[]>}
+     */
     const uniqueCharacters = computed(() => {
         const chars = new Set();
         pages.value.forEach(p => {

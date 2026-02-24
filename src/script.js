@@ -5,11 +5,17 @@ const { get, set } = idbKeyval;
 
 const pinia = createPinia();
 
+/**
+ * Vue アプリケーションのルートコンポーネント。
+ * setup() でストア・コンポーザブル・モジュールをすべてインスタンス化し、
+ * テンプレートに必要な状態・関数を return で公開する。
+ */
 const app = createApp({
     setup() {
         const VueDeps = { Vue: { ref, computed, nextTick, watch, onMounted, onBeforeUpdate } };
 
         // --- 1. Stores ---
+        // Pinia ストアをインスタンス化する（各ストアはシングルトン）
         /** @type {PageStoreInstance} */
         const pageStore = window.MangaApp.stores.usePageStore();
         /** @type {ConfigStoreInstance} */
@@ -19,12 +25,13 @@ const app = createApp({
         /** @type {HistoryStoreInstance} */
         const historyStore = window.MangaApp.stores.useHistoryStore();
 
-        // Wire cross-store dependencies
-        pageStore.setUiStore(uiStore);
-        uiStore.setConfigStore(configStore);
-        historyStore.setStores(pageStore, uiStore);
+        // ストア間の循環依存を setter で後から解決する
+        pageStore.setUiStore(uiStore);       // pageStore.spreads が uiStore.isSmallScreen を参照する
+        uiStore.setConfigStore(configStore); // uiStore.saveStatusText が configStore を参照する
+        historyStore.setStores(pageStore, uiStore); // historyStore が drawing 検索に pageStore を使う
 
         // --- Composables (pure functions, no factory needed) ---
+        // コンポーザブルは依存なしの純粋関数オブジェクト（インスタンス化不要）
         /** @type {CanvasUtils} */
         const canvasUtils = window.MangaApp.canvasUtils;
         /** @type {DndUtils} */
@@ -36,57 +43,67 @@ const app = createApp({
         /** @type {AutoSaveUtils} */
         const autoSaveUtils = window.MangaApp.autoSaveUtils;
 
-        // Inject canvasUtils into historyStore
+        // historyStore が Canvas の Undo/Redo に canvasUtils を使うので注入する
         historyStore.setCanvasUtils(canvasUtils);
 
         // --- 2. Helpers ---
+        // helpers は addScript（page-ops で定義）への参照を後から setAddScript で注入する
         /** @type {HelpersInstance} */
         const helpers = window.MangaApp.createHelpers({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, addScript: null
         });
 
         // --- 3. Canvas ---
+        // Canvas 描画・モーダル・undo/redo を担当するモジュール
         /** @type {CanvasModuleInstance} */
         const canvas = window.MangaApp.createCanvas({
             Vue: VueDeps.Vue, pageStore, uiStore, historyStore, helpers, canvasUtils
         });
 
         // --- 4. Page Operations ---
+        // ページ・セリフ・Drawing の CRUD、モード切替、ページ移動を担当するモジュール
         /** @type {PageOpsInstance} */
         const pageOps = window.MangaApp.createPageOps({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers, canvas, canvasUtils, dndUtils
         });
 
-        // Wire up late dependency: helpers.focusNext needs addScript
+        // helpers.focusNext は「最後のセリフで Tab → 新規セリフ追加」のために addScript が必要。
+        // page-ops が生成された後にバインドして循環依存を解消する（late binding）
         helpers.setAddScript(pageOps.addScript);
 
         // --- 5. Drag Plot ---
+        // plot モードのセリフ並び替えドラッグ操作を担当するモジュール
         /** @type {DragPlotInstance} */
         const dragPlot = window.MangaApp.createDragPlot({ pageStore, uiStore });
 
         // --- 6. Drag Conte ---
+        // conte モードの Drawing・セリフのドラッグ操作を担当するモジュール
         /** @type {DragConteInstance} */
         const dragConte = window.MangaApp.createDragConte({ pageStore, uiStore, canvas, canvasUtils, dndUtils });
 
         // --- 7. Layout ---
+        // name モードの Drawing・セリフのドラッグ・リサイズ・自動レイアウトを担当するモジュール
         /** @type {LayoutModuleInstance} */
         const layout = window.MangaApp.createLayout({
             pageStore, configStore, uiStore, historyStore, helpers, canvas, layoutUtils, dndUtils
         });
 
         // --- 8. Project I/O ---
+        // プロジェクトファイルの保存・読み込みを担当するモジュール
         /** @type {ProjectIOInstance} */
         const projectIO = window.MangaApp.createProjectIO({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas, canvasUtils, autoSaveUtils
         });
 
         // --- 9. Export ---
+        // PNG・PSD への書き出しを担当するモジュール
         /** @type {ExportModuleInstance} */
         const exporter = window.MangaApp.createExport({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, exportUtils
         });
 
         // --- 10. Keyboard ---
+        // セリフの分割・結合、フォーカス移動などのキーボード操作を担当するモジュール
         /** @type {KeyboardInstance} */
         const keyboard = window.MangaApp.createKeyboard({
             Vue: VueDeps.Vue, pageStore, uiStore, helpers
@@ -96,27 +113,32 @@ const app = createApp({
         const { currentMode, activePageIndex, pages } = storeToRefs(pageStore);
         const { pageConfig, displayW } = storeToRefs(configStore);
 
+        // モードまたはページが変わったとき、conte モードなら Canvas の描画内容を復元する
         watch([currentMode, activePageIndex], async () => {
             if (pageStore.currentMode === 'conte') {
                 canvas.restoreAllCanvases();
             }
         });
 
+        // ページデータまたは設定が変わったとき、2 秒後に IndexedDB へ自動保存する（デバウンス）
         watch([pages, pageConfig], () => {
-            if (uiStore.isRestoring) return;
+            if (uiStore.isRestoring) return; // IDB からの復元中は自動保存しない
             clearTimeout(uiStore.autoSaveTimer);
             uiStore.autoSaveTimer = setTimeout(() => autoSaveUtils.autoSaveToIDB(pageStore, configStore, uiStore), 2000);
         }, { deep: true });
 
+        // 画面幅が変わったとき（ページ設定の scale 変更など）、小画面判定を更新する
         watch(displayW, () => uiStore.checkScreenSize());
 
         // --- Lifecycle ---
         onMounted(async () => {
             try {
+                // IndexedDB から前回のプロジェクトを復元する
                 const restored = await autoSaveUtils.restoreFromIDB(
                     pageStore, configStore, uiStore, canvasUtils, helpers, nextTick
                 );
                 if (!restored) {
+                    // 復元データがない場合は初期 Drawing の Undo 履歴を初期化する
                     if (pageStore.pages[0].drawings[0]) historyStore.saveHistory(pageStore.pages[0].drawings[0]);
                     nextTick(() => helpers.resizeTextareas());
                 }
@@ -128,21 +150,25 @@ const app = createApp({
                 uiStore.isProcessing = false;
             }
 
+            // ウィンドウリサイズ時に Textarea の高さと小画面フラグを更新する
             window.addEventListener('resize', () => {
                 helpers.resizeTextareas();
                 uiStore.checkScreenSize();
             });
             uiStore.checkScreenSize();
+
+            // グローバルキーボードショートカット（Ctrl+Z / Ctrl+Y）を登録する
             window.addEventListener('keydown', canvas.handleGlobalKeydown);
         });
 
+        // 再レンダリング前に DOM ref の辞書をクリアする（古い ref が残らないようにする）
         onBeforeUpdate(() => {
             uiStore.canvasRefs = {};
             uiStore.scriptInputRefs = {};
         });
 
         // --- Return ---
-        // storeToRefs for template reactivity
+        // テンプレートのリアクティビティのために storeToRefs でラップして返す
         const pageRefs = storeToRefs(pageStore);
         const configRefs = storeToRefs(configStore);
         const uiRefs = storeToRefs(uiStore);
