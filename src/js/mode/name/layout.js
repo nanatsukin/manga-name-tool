@@ -1,23 +1,41 @@
 // js/mode/name/layout.js - Layout operations + auto layout
 window.MangaApp = window.MangaApp || {};
 
+/** @param {LayoutModuleDeps} deps @returns {LayoutModuleInstance} */
 window.MangaApp.createLayout = function (deps) {
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
     const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {HistoryStoreInstance} */
     const historyStore = deps.historyStore;
+    /** @type {HelpersInstance} */
     const helpers = deps.helpers;
+    /** @type {CanvasModuleInstance} */
     const canvas = deps.canvas;
+    /** @type {LayoutUtils} */
     const layoutUtils = deps.layoutUtils;
+    /** @type {DndUtils} */
     const dndUtils = deps.dndUtils;
 
     // Layout interaction state
+    /** @type {Drawing | Script | null} */
     let interactTarget = null;
-    let startX, startY, startValX, startValY, startW, startH, activeHandleType;
+    /** @type {number} */
+    let startX = 0, startY = 0, startValX = 0, startValY = 0, startW = 0, startH = 0;
+    /** @type {string} */
+    let activeHandleType = '';
+    /** @type {{ item: Script, startX: number, startY: number }[]} */
     let linkedItems = [];
 
+    /**
+     * @param {MouseEvent | TouchEvent} e
+     * @param {Drawing | Script} item
+     */
     const startLayoutDrag = (e, item) => {
-        if (e.target.classList.contains('resize-handle')) return;
+        if (/** @type {HTMLElement} */ (e.target).classList.contains('resize-handle')) return;
         if (e.type === 'touchstart') e.preventDefault();
         e.stopPropagation();
 
@@ -26,9 +44,9 @@ window.MangaApp.createLayout = function (deps) {
         startX = pos.x;
         startY = pos.y;
 
-        if (uiStore.isImageEditMode && item.inner) {
-            startValX = item.inner.x || 0;
-            startValY = item.inner.y || 0;
+        if (uiStore.isImageEditMode && /** @type {Drawing} */ (item).inner) {
+            startValX = /** @type {Drawing} */ (item).inner.x || 0;
+            startValY = /** @type {Drawing} */ (item).inner.y || 0;
             dndUtils.addPointerListeners(onImageDrag, stopInteract);
         } else {
             startValX = item.layout.x;
@@ -43,6 +61,7 @@ window.MangaApp.createLayout = function (deps) {
         }
     };
 
+    /** @param {any} e */
     const onLayoutDrag = (e) => {
         if (!interactTarget) return;
         e.preventDefault();
@@ -51,8 +70,8 @@ window.MangaApp.createLayout = function (deps) {
         let newX = startValX + (pos.x - startX);
         let newY = startValY + (pos.y - startY);
 
-        const w = interactTarget.layout.w || 50;
-        const h = interactTarget.layout.h || 50;
+        const w = /** @type {Drawing} */ (interactTarget).layout.w || 50;
+        const h = /** @type {Drawing} */ (interactTarget).layout.h || 50;
         newX = Math.max(0, Math.min(configStore.displayW - w, newX));
         newY = Math.max(0, Math.min(configStore.displayH - h, newY));
         interactTarget.layout.x = newX;
@@ -72,27 +91,37 @@ window.MangaApp.createLayout = function (deps) {
         }
     };
 
+    /** @param {any} e */
     const onImageDrag = (e) => {
         if (!interactTarget) return;
         if (e.type === 'touchmove') e.preventDefault();
         const pos = helpers.getClientPos(e);
-        if (!interactTarget.inner) interactTarget.inner = { scale: 1, x: 0, y: 0 };
-        interactTarget.inner.x = startValX + (pos.x - startX);
-        interactTarget.inner.y = startValY + (pos.y - startY);
+        const imgTarget = /** @type {Drawing} */ (interactTarget);
+        if (!imgTarget.inner) imgTarget.inner = { scale: 1, x: 0, y: 0 };
+        imgTarget.inner.x = startValX + (pos.x - startX);
+        imgTarget.inner.y = startValY + (pos.y - startY);
     };
 
+    /** @param {WheelEvent} e @param {Drawing} item */
     const onImageWheel = (e, item) => {
+        // @ts-ignore - intentional loose comparison
         if (!uiStore.isImageEditMode || !uiStore.selectedItemId === item.id) return;
         if (!item.inner) item.inner = { scale: 1, x: 0, y: 0 };
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
         item.inner.scale = Math.max(0.1, (item.inner.scale || 1) + delta);
     };
 
+    /** @param {Drawing} item @param {number} amount */
     const zoomImage = (item, amount) => {
         if (!item.inner) item.inner = { scale: 1, x: 0, y: 0 };
         item.inner.scale = Math.max(0.1, (item.inner.scale || 1) + amount);
     };
 
+    /**
+     * @param {MouseEvent | TouchEvent} e
+     * @param {Drawing} item
+     * @param {'tl' | 'tr' | 'bl' | 'br'} handleType
+     */
     const startLayoutResize = (e, item, handleType) => {
         if (e.type === 'touchstart') e.preventDefault();
         interactTarget = item;
@@ -109,6 +138,7 @@ window.MangaApp.createLayout = function (deps) {
         dndUtils.addPointerListeners(onLayoutResize, stopInteract);
     };
 
+    /** @param {any} e */
     const onLayoutResize = (e) => {
         if (!interactTarget) return;
         if (e.type === 'touchmove') e.preventDefault();
@@ -127,8 +157,9 @@ window.MangaApp.createLayout = function (deps) {
         if (newY + newH > configStore.displayH) newH = configStore.displayH - newY;
         interactTarget.layout.x = newX;
         interactTarget.layout.y = newY;
-        interactTarget.layout.w = newW;
-        interactTarget.layout.h = newH;
+        const resizeTarget = /** @type {Drawing} */ (interactTarget);
+        resizeTarget.layout.w = newW;
+        resizeTarget.layout.h = newH;
     };
 
     const stopInteract = () => {
@@ -141,15 +172,22 @@ window.MangaApp.createLayout = function (deps) {
         }
     };
 
+    /**
+     * @param {number} pageIdx
+     * @param {'scripts' | 'drawings'} type
+     * @param {number} itemIdx
+     * @param {number} dir
+     */
     const moveItemPage = (pageIdx, type, itemIdx, dir) => {
         const targetPageIdx = pageIdx + dir;
         if (targetPageIdx >= 0 && targetPageIdx < pageStore.pages.length) {
             const item = pageStore.pages[pageIdx][type].splice(itemIdx, 1)[0];
-            pageStore.pages[targetPageIdx][type].push(item);
+            pageStore.pages[targetPageIdx][type].push(/** @type {any} */ (item));
             historyStore.recordNameHistory();
         }
     };
 
+    /** @param {number} pageIdx @param {number} drawingIdx @param {number} dir @returns {Promise<void>} */
     const moveDrawingPage = async (pageIdx, drawingIdx, dir) => {
         const targetPageIdx = pageIdx + dir;
         if (targetPageIdx >= 0 && targetPageIdx < pageStore.pages.length) {

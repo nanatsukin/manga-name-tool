@@ -5,12 +5,17 @@ window.MangaApp.stores = window.MangaApp.stores || {};
 window.MangaApp.stores.usePageStore = Pinia.defineStore('page', () => {
     const { ref, computed } = Vue;
 
+    /** @type {VueRef<Page[]>} */
     const pages = ref([{ id: Date.now(), scripts: [], drawings: [] }]);
+    /** @type {VueRef<number>} */
     const activePageIndex = ref(0);
+    /** @type {VueRef<string>} */
     const currentMode = ref('plot');
 
     // Cross-store dependency (injected via setUiStore)
+    /** @type {UiStoreInstance | null} */
     let _uiStore = null;
+    /** @param {UiStoreInstance} store */
     const setUiStore = (store) => { _uiStore = store; };
 
     const drawingCountWarning = computed(() => {

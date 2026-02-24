@@ -1,12 +1,21 @@
 // js/ops/keyboard.js - Keyboard handlers, text split/merge
 window.MangaApp = window.MangaApp || {};
 
+/** @param {KeyboardDeps} deps @returns {KeyboardInstance} */
 window.MangaApp.createKeyboard = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {HelpersInstance} */
     const helpers = deps.helpers;
 
+    /**
+     * @param {KeyboardEvent} e
+     * @param {number} pIndex
+     * @param {number} sIndex
+     */
     const handleScriptTextKeydown = (e, pIndex, sIndex) => {
         if (e.key === 'Tab') {
             e.preventDefault();
@@ -17,13 +26,14 @@ window.MangaApp.createKeyboard = function (deps) {
 
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
-            performSplit(pIndex, sIndex, e.target);
+            performSplit(pIndex, sIndex, /** @type {HTMLTextAreaElement} */ (e.target));
             return;
         }
 
         if (e.key === 'Backspace') {
-            const cursor = e.target.selectionStart;
-            if (cursor === 0 && e.target.selectionEnd === 0 && sIndex > 0) {
+            const /** @type {HTMLTextAreaElement} */ target = /** @type {HTMLTextAreaElement} */ (e.target);
+            const cursor = target.selectionStart;
+            if (cursor === 0 && target.selectionEnd === 0 && sIndex > 0) {
                 e.preventDefault();
                 mergeScriptWithPrev(pIndex, sIndex);
             }
@@ -31,13 +41,19 @@ window.MangaApp.createKeyboard = function (deps) {
         }
     };
 
+    /** @param {number} pIndex @param {number} sIndex */
     const splitScriptFromButton = (pIndex, sIndex) => {
-        const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex}-text`];
+        const el = /** @type {HTMLTextAreaElement} */ (uiStore.scriptInputRefs[`${pIndex}-${sIndex}-text`]);
         if (el) {
             performSplit(pIndex, sIndex, el);
         }
     };
 
+    /**
+     * @param {number} pIndex
+     * @param {number} sIndex
+     * @param {HTMLTextAreaElement} textareaElement
+     */
     const performSplit = (pIndex, sIndex, textareaElement) => {
         const scripts = pageStore.pages[pIndex].scripts;
         const currentScript = scripts[sIndex];
@@ -50,6 +66,7 @@ window.MangaApp.createKeyboard = function (deps) {
 
         currentScript.text = firstPart;
 
+        /** @type {Script} */
         const newScript = {
             id: Date.now() + Math.random(),
             type: currentScript.type || (currentScript.char ? 'dialogue' : 'direction'),
@@ -63,7 +80,7 @@ window.MangaApp.createKeyboard = function (deps) {
 
         nextTick(() => {
             helpers.resizeTextareas();
-            const nextInput = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-text`];
+            const nextInput = /** @type {HTMLTextAreaElement} */ (uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-text`]);
             if (nextInput) {
                 nextInput.focus();
                 nextInput.setSelectionRange(0, 0);
@@ -71,6 +88,7 @@ window.MangaApp.createKeyboard = function (deps) {
         });
     };
 
+    /** @param {number} pIndex @param {number} sIndex */
     const mergeScriptWithPrev = (pIndex, sIndex) => {
         const scripts = pageStore.pages[pIndex].scripts;
         const currentScript = scripts[sIndex];
@@ -82,7 +100,7 @@ window.MangaApp.createKeyboard = function (deps) {
 
         nextTick(() => {
             helpers.resizeTextareas();
-            const prevInput = uiStore.scriptInputRefs[`${pIndex}-${sIndex - 1}-text`];
+            const prevInput = /** @type {HTMLTextAreaElement} */ (uiStore.scriptInputRefs[`${pIndex}-${sIndex - 1}-text`]);
             if (prevInput) {
                 prevInput.focus();
                 prevInput.setSelectionRange(originalPrevLength, originalPrevLength);

@@ -1,18 +1,27 @@
 // js/ops/page-ops.js - Page/script CRUD, mode switching, navigation
 window.MangaApp = window.MangaApp || {};
 
+/** @param {PageOpsDeps} deps @returns {PageOpsInstance} */
 window.MangaApp.createPageOps = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
     const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {HistoryStoreInstance} */
     const historyStore = deps.historyStore;
+    /** @type {HelpersInstance} */
     const helpers = deps.helpers;
+    /** @type {CanvasModuleInstance} */
     const canvas = deps.canvas;
+    /** @type {CanvasUtils} */
     const canvasUtils = deps.canvasUtils;
+    /** @type {DndUtils} */
     const dndUtils = deps.dndUtils;
 
-    // Mode switching
+    /** @param {string} mode @returns {Promise<void>} */
     const changeMode = async (mode) => {
         if (pageStore.currentMode === 'name' && uiStore.nameModeContainer) {
             uiStore.nameModeScrollTop = uiStore.nameModeContainer.scrollTop;
@@ -35,12 +44,13 @@ window.MangaApp.createPageOps = function (deps) {
         }
     };
 
-    // Page CRUD
+    /** @returns {Promise<void>} */
     const addPage = async () => {
         if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
         pageStore.pages.push({ id: Date.now(), scripts: [], drawings: [] });
     };
 
+    /** @param {number} idx */
     const deletePage = (idx) => {
         if (idx === 0) {
             if (pageStore.pages.length > 1) {
@@ -62,18 +72,21 @@ window.MangaApp.createPageOps = function (deps) {
         nextTick(() => helpers.resizeTextareas());
     };
 
-    // Script CRUD
+    /** @param {number} pIdx */
     const addScript = (pIdx) => {
-        pageStore.pages[pIdx].scripts.push({
+        /** @type {Script} */
+        const newScript = {
             id: Date.now() + Math.random(),
             type: 'dialogue',
             char: '', text: '',
             drawingId: null,
             layout: { x: 300, y: 200, fontSize: configStore.pageConfig.defaultFontSize }
-        });
+        };
+        pageStore.pages[pIdx].scripts.push(newScript);
         nextTick(() => helpers.resizeTextareas());
     };
 
+    /** @param {number} pIndex @param {number} idx */
     const removeScript = (pIndex, idx) => {
         const script = pageStore.pages[pIndex].scripts[idx];
         if (script.text && script.text.trim() !== '') {
@@ -83,6 +96,7 @@ window.MangaApp.createPageOps = function (deps) {
         nextTick(() => helpers.resizeTextareas());
     };
 
+    /** @param {number} pIndex @param {number} idx */
     const toggleScriptType = (pIndex, idx) => {
         const script = pageStore.pages[pIndex].scripts[idx];
         if (!script.type) {
@@ -104,15 +118,17 @@ window.MangaApp.createPageOps = function (deps) {
         const page = pageStore.pages[pIdx];
         const viewportCenterY = (uiStore.nameModeContainer?.scrollTop || 0) + (window.innerHeight / 2) - 100;
         const y = Math.max(50, Math.min(configStore.pageConfig.canvasH * configStore.pageConfig.scale - 100, viewportCenterY));
-        page.scripts.push({
+        /** @type {Script} */
+        const noteScript = {
             id: Date.now(), type: 'note', char: '', text: '注意書き',
             drawingId: null,
             layout: { x: 100, y: y, fontSize: configStore.pageConfig.defaultFontSize }
-        });
+        };
+        page.scripts.push(noteScript);
         historyStore.recordNameHistory();
     };
 
-    // Script operations
+    /** @param {number} pIndex @param {number} sIndex @param {number} dir */
     const moveScript = (pIndex, sIndex, dir) => {
         const scripts = pageStore.pages[pIndex].scripts;
         const targetIndex = sIndex + dir;
@@ -122,8 +138,10 @@ window.MangaApp.createPageOps = function (deps) {
         }
     };
 
+    /** @param {number} pIndex @param {number} sIndex */
     const insertScriptAfter = (pIndex, sIndex) => {
         const scripts = pageStore.pages[pIndex].scripts;
+        /** @type {Script} */
         const newScript = {
             id: Date.now() + Math.random(),
             type: 'dialogue', char: '', text: '',
@@ -138,10 +156,11 @@ window.MangaApp.createPageOps = function (deps) {
         });
     };
 
+    /** @param {number} pIndex @param {number} sIndex @returns {Promise<void>} */
     const moveSubsequentScriptsToNewPage = async (pIndex, sIndex) => {
         if (!confirm("このセリフ以降を新しいページに移動しますか？")) return;
         const scriptsToMove = pageStore.pages[pIndex].scripts.splice(sIndex);
-        const newPage = { id: Date.now(), scripts: scriptsToMove, drawings: [] };
+        const newPage = /** @type {Page} */ ({ id: Date.now(), scripts: scriptsToMove, drawings: [] });
         pageStore.pages.splice(pIndex + 1, 0, newPage);
         nextTick(() => helpers.resizeTextareas());
     };
@@ -161,7 +180,7 @@ window.MangaApp.createPageOps = function (deps) {
         }
     };
 
-    // Selection
+    /** @param {number | null} id */
     const selectItem = (id) => {
         uiStore.selectedItemId = id;
         if (id === null) {
@@ -181,20 +200,21 @@ window.MangaApp.createPageOps = function (deps) {
         uiStore.isImageEditMode = !uiStore.isImageEditMode;
     };
 
-    // Drawing CRUD
+    /** @param {number} [pIdx] */
     const addDrawing = (pIdx) => {
         const targetIdx = (typeof pIdx === 'number') ? pIdx : pageStore.activePageIndex;
-        const newDrawing = {
+        const newDrawing = /** @type {Drawing} */ ({
             id: Date.now() + Math.random(),
             imgSrc: null,
             layout: { x: 50, y: 50, w: 300, h: 200, z: 1 },
             inner: { scale: 1, x: 0, y: 0 }
-        };
+        });
         canvasUtils.initDrawingHistory(newDrawing);
         pageStore.pages[targetIdx].drawings.push(newDrawing);
         nextTick(() => historyStore.saveHistory(newDrawing));
     };
 
+    /** @param {number} pIdx @param {number} idx */
     const removeDrawing = (pIdx, idx) => {
         if (confirm('削除しますか？')) {
             const removedId = pageStore.pages[pIdx].drawings[idx].id;
@@ -208,7 +228,7 @@ window.MangaApp.createPageOps = function (deps) {
         }
     };
 
-    // Jump navigation
+    /** @param {number} pIndex @param {Script} script @returns {Promise<void>} */
     const jumpToPlot = async (pIndex, script) => {
         const sIndex = pageStore.pages[pIndex].scripts.findIndex(s => s.id === script.id);
         if (sIndex === -1) return;
@@ -223,6 +243,7 @@ window.MangaApp.createPageOps = function (deps) {
         }, 100);
     };
 
+    /** @param {number} pIndex @param {Script} script @returns {Promise<void>} */
     const jumpToConte = async (pIndex, script) => {
         await changeMode('conte');
         pageStore.activePageIndex = pIndex;
@@ -234,6 +255,7 @@ window.MangaApp.createPageOps = function (deps) {
         }
     };
 
+    /** @param {number} pIndex @param {Script} script @returns {Promise<void>} */
     const jumpToName = async (pIndex, script) => {
         await changeMode('name');
         setTimeout(() => {
@@ -245,7 +267,7 @@ window.MangaApp.createPageOps = function (deps) {
         }, 100);
     };
 
-    // Conte order sorting
+    /** @param {number} pageIndex */
     const sortScriptsByConteOrder = (pageIndex) => {
         const page = pageStore.pages[pageIndex];
         if (!page) return;

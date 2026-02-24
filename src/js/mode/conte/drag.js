@@ -1,18 +1,24 @@
 // js/mode/conte/drag.js - Conte drag & drop (drawings + scripts)
 window.MangaApp = window.MangaApp || {};
 
+/** @param {DragConteDeps} deps @returns {DragConteInstance} */
 window.MangaApp.createDragConte = function (deps) {
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {CanvasModuleInstance} */
     const canvas = deps.canvas;
+    /** @type {CanvasUtils} */
     const canvasUtils = deps.canvasUtils;
+    /** @type {DndUtils} */
     const dndUtils = deps.dndUtils;
 
     // Drawing drag handle
     const onHandleDown = () => { uiStore.isDrawingDragReady = true; };
     const onHandleUp = () => { uiStore.isDrawingDragReady = false; };
 
-    // Drawing D&D
+    /** @param {DragEvent} e @param {number} idx */
     const dragStartDrawing = (e, idx) => {
         if (!uiStore.isDrawingDragReady) {
             e.preventDefault();
@@ -27,12 +33,14 @@ window.MangaApp.createDragConte = function (deps) {
         uiStore.isDrawingDragReady = false;
     };
 
+    /** @param {number} idx */
     const dragOverDrawing = (idx) => {
         if (uiStore.draggingDrawingIndex === null) return;
         if (uiStore.draggingDrawingIndex === idx) return;
         if (uiStore.dropTargetDrawingIndex !== idx) uiStore.dropTargetDrawingIndex = idx;
     };
 
+    /** @param {number} targetIdx @returns {Promise<void>} */
     const dropOnDrawing = async (targetIdx) => {
         const srcIdx = uiStore.draggingDrawingIndex;
         if (srcIdx === null) return;
@@ -50,12 +58,14 @@ window.MangaApp.createDragConte = function (deps) {
         canvas.restoreAllCanvases();
     };
 
-    // Conte script D&D
+    /** @param {DragEvent} e @param {Script} script */
     const dragStartConteScript = (e, script) => {
         e.stopPropagation();
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.dropEffect = 'move';
-        e.dataTransfer.setData('text/plain', script.id);
+        if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.dropEffect = 'move';
+            e.dataTransfer.setData('text/plain', String(script.id));
+        }
         uiStore.draggingConteScript = script;
     };
 
@@ -64,12 +74,14 @@ window.MangaApp.createDragConte = function (deps) {
         uiStore.isConteDropTarget = null;
     };
 
+    /** @param {number} targetId */
     const dragOverConteScript = (targetId) => {
         if (uiStore.draggingDrawingIndex !== null) return;
         if (!uiStore.draggingConteScript) return;
         if (uiStore.isConteDropTarget !== targetId) uiStore.isConteDropTarget = targetId;
     };
 
+    /** @param {Script} targetScript */
     const dropOnConteScript = (targetScript) => {
         const sourceScriptRef = uiStore.draggingConteScript;
         if (!sourceScriptRef || sourceScriptRef.id === targetScript.id) return;
@@ -91,6 +103,7 @@ window.MangaApp.createDragConte = function (deps) {
         uiStore.isConteDropTarget = null;
     };
 
+    /** @param {number} drawingId */
     const dropOnConteDrawing = (drawingId) => {
         const sourceScriptRef = uiStore.draggingConteScript;
         if (!sourceScriptRef) return;

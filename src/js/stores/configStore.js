@@ -5,6 +5,7 @@ window.MangaApp.stores = window.MangaApp.stores || {};
 window.MangaApp.stores.useConfigStore = Pinia.defineStore('config', () => {
     const { ref, computed } = Vue;
 
+    /** @type {VueRef<PageConfig>} */
     const pageConfig = ref({
         canvasW: 6071, canvasH: 8598,
         finishW: 5197, finishH: 7323,
@@ -14,6 +15,7 @@ window.MangaApp.stores.useConfigStore = Pinia.defineStore('config', () => {
         defaultFontSize: 18
     });
 
+    /** @type {FontOption[]} */
     const fontOptions = [
         { label: '明朝体 (標準)', value: '"HiraMinProN-W3", "Yu Mincho", "MS PMincho", "Hiragino Mincho ProN", serif' },
         { label: 'ゴシック体', value: '"HiraKakuProN-W3", "Yu Gothic", "MS PGothic", "Hiragino Sans", sans-serif' },
@@ -21,6 +23,7 @@ window.MangaApp.stores.useConfigStore = Pinia.defineStore('config', () => {
         { label: 'アンチック体風 (Gothic+Mincho)', value: '"HiraMinProN-W3", "Yu Mincho", "MS PMincho", serif' }
     ];
 
+    /** @type {VueRef<ExportSettings>} */
     const exportSettings = ref({
         format: 'png',
         rangeType: 'all',
@@ -28,6 +31,7 @@ window.MangaApp.stores.useConfigStore = Pinia.defineStore('config', () => {
         rangeEnd: 1
     });
 
+    /** @type {VueRef<FileSystemFileHandle | null>} */
     const currentFileHandle = ref(null);
 
     const displayW = computed(() => pageConfig.value.canvasW * pageConfig.value.scale);

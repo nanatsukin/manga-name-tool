@@ -10,9 +10,13 @@ const app = createApp({
         const VueDeps = { Vue: { ref, computed, nextTick, watch, onMounted, onBeforeUpdate } };
 
         // --- 1. Stores ---
+        /** @type {PageStoreInstance} */
         const pageStore = window.MangaApp.stores.usePageStore();
+        /** @type {ConfigStoreInstance} */
         const configStore = window.MangaApp.stores.useConfigStore();
+        /** @type {UiStoreInstance} */
         const uiStore = window.MangaApp.stores.useUiStore();
+        /** @type {HistoryStoreInstance} */
         const historyStore = window.MangaApp.stores.useHistoryStore();
 
         // Wire cross-store dependencies
@@ -21,26 +25,34 @@ const app = createApp({
         historyStore.setStores(pageStore, uiStore);
 
         // --- Composables (pure functions, no factory needed) ---
+        /** @type {CanvasUtils} */
         const canvasUtils = window.MangaApp.canvasUtils;
+        /** @type {DndUtils} */
         const dndUtils = window.MangaApp.dndUtils;
+        /** @type {LayoutUtils} */
         const layoutUtils = window.MangaApp.layoutUtils;
+        /** @type {ExportUtils} */
         const exportUtils = window.MangaApp.exportUtils;
+        /** @type {AutoSaveUtils} */
         const autoSaveUtils = window.MangaApp.autoSaveUtils;
 
         // Inject canvasUtils into historyStore
         historyStore.setCanvasUtils(canvasUtils);
 
         // --- 2. Helpers ---
+        /** @type {HelpersInstance} */
         const helpers = window.MangaApp.createHelpers({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, addScript: null
         });
 
         // --- 3. Canvas ---
+        /** @type {CanvasModuleInstance} */
         const canvas = window.MangaApp.createCanvas({
             Vue: VueDeps.Vue, pageStore, uiStore, historyStore, helpers, canvasUtils
         });
 
         // --- 4. Page Operations ---
+        /** @type {PageOpsInstance} */
         const pageOps = window.MangaApp.createPageOps({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, historyStore, helpers, canvas, canvasUtils, dndUtils
         });
@@ -49,27 +61,33 @@ const app = createApp({
         helpers.setAddScript(pageOps.addScript);
 
         // --- 5. Drag Plot ---
+        /** @type {DragPlotInstance} */
         const dragPlot = window.MangaApp.createDragPlot({ pageStore, uiStore });
 
         // --- 6. Drag Conte ---
+        /** @type {DragConteInstance} */
         const dragConte = window.MangaApp.createDragConte({ pageStore, uiStore, canvas, canvasUtils, dndUtils });
 
         // --- 7. Layout ---
+        /** @type {LayoutModuleInstance} */
         const layout = window.MangaApp.createLayout({
             pageStore, configStore, uiStore, historyStore, helpers, canvas, layoutUtils, dndUtils
         });
 
         // --- 8. Project I/O ---
+        /** @type {ProjectIOInstance} */
         const projectIO = window.MangaApp.createProjectIO({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, helpers, canvas, canvasUtils, autoSaveUtils
         });
 
         // --- 9. Export ---
+        /** @type {ExportModuleInstance} */
         const exporter = window.MangaApp.createExport({
             Vue: VueDeps.Vue, pageStore, configStore, uiStore, layoutUtils, exportUtils
         });
 
         // --- 10. Keyboard ---
+        /** @type {KeyboardInstance} */
         const keyboard = window.MangaApp.createKeyboard({
             Vue: VueDeps.Vue, pageStore, uiStore, helpers
         });

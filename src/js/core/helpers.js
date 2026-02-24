@@ -1,14 +1,19 @@
 // js/core/helpers.js - Coordinate helpers, guide calculation, textarea resize, etc.
 window.MangaApp = window.MangaApp || {};
 
+/** @param {HelpersDeps} deps @returns {HelpersInstance} */
 window.MangaApp.createHelpers = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
     const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {LayoutUtils} */
     const layoutUtils = deps.layoutUtils;
 
-    // Touch / mouse coordinate helper
+    /** @param {any} e @returns {{ x: number, y: number }} */
     const getClientPos = (e) => {
         if (e.touches && e.touches.length > 0) {
             return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -16,7 +21,7 @@ window.MangaApp.createHelpers = function (deps) {
         return { x: e.clientX, y: e.clientY };
     };
 
-    // Guide drawing coordinate calculation
+    /** @param {number} pageIndex @returns {GuideProps} */
     const guideProps = (pageIndex) => {
         const { canvasW, canvasH, finishW, finishH, bleed, scale } = configStore.pageConfig;
 
@@ -68,7 +73,7 @@ window.MangaApp.createHelpers = function (deps) {
     // Textarea resize
     const resizeTextareas = () => {
         nextTick(() => {
-            const textareas = document.querySelectorAll('textarea.panel-input');
+            const textareas = /** @type {NodeListOf<HTMLTextAreaElement>} */ (document.querySelectorAll('textarea.panel-input'));
             textareas.forEach(el => {
                 el.style.height = 'auto';
                 el.style.height = el.scrollHeight + 'px';
@@ -76,17 +81,24 @@ window.MangaApp.createHelpers = function (deps) {
         });
     };
 
+    /** @param {Event} e */
     const adjustHeight = (e) => {
-        const el = e.target;
+        const el = /** @type {HTMLTextAreaElement} */ (e.target);
         el.style.height = 'auto';
         el.style.height = el.scrollHeight + 'px';
     };
 
-    // Input ref management
+    /**
+     * @param {HTMLElement | null} el
+     * @param {number} p
+     * @param {number} s
+     * @param {'char' | 'text'} type
+     */
     const setInputRef = (el, p, s, type) => {
         if (el) uiStore.scriptInputRefs[`${p}-${s}-${type}`] = el;
     };
 
+    /** @param {number} p @param {number} s */
     const focusText = (p, s) => {
         nextTick(() => {
             const el = uiStore.scriptInputRefs[`${p}-${s}-text`];
@@ -94,6 +106,11 @@ window.MangaApp.createHelpers = function (deps) {
         });
     };
 
+    /**
+     * @param {number} pIndex
+     * @param {number} sIndex
+     * @param {'text' | 'char'} currentType
+     */
     const focusPrev = (pIndex, sIndex, currentType) => {
         if (currentType === 'text') {
             nextTick(() => {
@@ -118,9 +135,12 @@ window.MangaApp.createHelpers = function (deps) {
         }
     };
 
+    /** @type {((pIdx: number) => void) | null} */
     let _addScript = deps.addScript;
+    /** @param {(pIdx: number) => void} fn */
     const setAddScript = (fn) => { _addScript = fn; };
 
+    /** @param {number} pIndex @param {number} sIndex */
     const focusNext = (pIndex, sIndex) => {
         const addScript = _addScript;
         if (pageStore.pages[pIndex].scripts.length > sIndex + 1) {
@@ -143,18 +163,19 @@ window.MangaApp.createHelpers = function (deps) {
         }
     };
 
-    // Page text preview / copy
+    /** @param {Page} page @returns {string} */
     const getPageTextPreview = (page) => {
         if (!page.scripts) return '';
         return page.scripts.filter(s => s.char).map(s => s.text).join(' / ');
     };
 
+    /** @param {Page} page @returns {Promise<void>} */
     const copyPageText = async (page) => {
         const text = page.scripts.filter(s => s.char).map(s => s.text).join('\n\n');
         try {
             await navigator.clipboard.writeText(text);
             uiStore.copiedPageId = page.id;
-            setTimeout(() => uiStore.copiedPageId = null, 1000);
+            setTimeout(() => { uiStore.copiedPageId = null; }, 1000);
         } catch (e) {
             alert('コピー失敗: ' + e);
         }
@@ -187,13 +208,14 @@ window.MangaApp.createHelpers = function (deps) {
         }
     };
 
-    // Script query helpers
+    /** @param {number} pIdx @returns {Script[]} */
     const getUnassignedScripts = (pIdx) => {
         const page = pageStore.pages[pIdx];
         const validDrawingIds = new Set(page.drawings.map(d => d.id));
         return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
     };
 
+    /** @param {number} pIdx @param {number} drawingId @returns {Script[]} */
     const getScriptsForDrawing = (pIdx, drawingId) => {
         return pageStore.pages[pIdx].scripts.filter(s => s.drawingId === drawingId);
     };

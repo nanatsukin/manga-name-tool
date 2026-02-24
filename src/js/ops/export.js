@@ -1,12 +1,18 @@
 // js/ops/export.js - PNG/PSD export
 window.MangaApp = window.MangaApp || {};
 
+/** @param {ExportModuleDeps} deps @returns {ExportModuleInstance} */
 window.MangaApp.createExport = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
     const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {LayoutUtils} */
     const layoutUtils = deps.layoutUtils;
+    /** @type {ExportUtils} */
     const exportUtils = deps.exportUtils;
 
     // Export modal
@@ -20,7 +26,11 @@ window.MangaApp.createExport = function (deps) {
         exportData(configStore.exportSettings.format, configStore.exportSettings);
     };
 
-    // Export data (PNG/PSD)
+    /**
+     * @param {string} [format]
+     * @param {ExportSettings | null} [optSettings]
+     * @returns {Promise<void>}
+     */
     const exportData = async (format = 'png', optSettings = null) => {
         if (pageStore.currentMode !== 'name') {
             alert('ネームモードに切り替えてから実行します');
@@ -28,7 +38,7 @@ window.MangaApp.createExport = function (deps) {
             await nextTick();
         }
 
-        const settings = (optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' };
+        const settings = /** @type {ExportSettings} */ ((optSettings && typeof optSettings === 'object') ? optSettings : { rangeType: 'all' });
 
         const targetPageIndices = exportUtils.getTargetPageIndices(
             settings, pageStore.pages.length, pageStore.activePageIndex
@@ -71,7 +81,7 @@ window.MangaApp.createExport = function (deps) {
         await nextTick();
         await new Promise(r => setTimeout(r, 1000));
 
-        const pageElements = document.querySelectorAll('.manga-page');
+        const pageElements = /** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll('.manga-page'));
         const zip = useDirectory ? null : new JSZip();
 
         for (let i = 0; i < pageElements.length; i++) {

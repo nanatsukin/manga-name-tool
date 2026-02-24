@@ -1,14 +1,19 @@
 // js/composables/layout.js - ページ座標計算・境界クランプ
 window.MangaApp = window.MangaApp || {};
 
+/** @type {LayoutUtils} */
 window.MangaApp.layoutUtils = {
-    // 右ページ判定 (index 0 または奇数)
+    /** @param {number} pageIndex @returns {boolean} */
     isRightPage(pageIndex) {
         return (pageIndex === 0) || (pageIndex % 2 !== 0);
     },
 
-    // 安全領域座標の計算
-    // scale=1 でスケールなし (export用)、scale=config.scale でスケール済み
+    /**
+     * @param {PageConfig} config
+     * @param {number} pageIndex
+     * @param {number} [scale]
+     * @returns {SafeArea}
+     */
     getSafeArea(config, pageIndex, scale) {
         if (scale === undefined) scale = 1;
         const { canvasW, canvasH, finishW, finishH, safeTop, safeBottom, safeInside, safeOutside } = config;
@@ -28,7 +33,11 @@ window.MangaApp.layoutUtils = {
         };
     },
 
-    // 矩形を 0〜pageW/pageH 内にクランプ
+    /**
+     * @param {number} x @param {number} y @param {number} w @param {number} h
+     * @param {number} pageW @param {number} pageH
+     * @returns {{ x: number, y: number, w: number, h: number }}
+     */
     clampRect(x, y, w, h, pageW, pageH) {
         if (x < 0) { w += x; x = 0; }
         if (y < 0) { h += y; y = 0; }

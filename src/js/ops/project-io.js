@@ -1,17 +1,25 @@
 // js/ops/project-io.js - Project save/load
 window.MangaApp = window.MangaApp || {};
 
+/** @param {ProjectIODeps} deps @returns {ProjectIOInstance} */
 window.MangaApp.createProjectIO = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
     const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {HelpersInstance} */
     const helpers = deps.helpers;
+    /** @type {CanvasModuleInstance} */
     const canvas = deps.canvas;
+    /** @type {CanvasUtils} */
     const canvasUtils = deps.canvasUtils;
+    /** @type {AutoSaveUtils} */
     const autoSaveUtils = deps.autoSaveUtils;
 
-    // Create export JSON data
+    /** @returns {Promise<string>} */
     const createExportData = async () => {
         if (pageStore.currentMode === 'conte') await canvas.saveAllCanvases();
         const exportData = {
@@ -118,16 +126,17 @@ window.MangaApp.createProjectIO = function (deps) {
         }
     };
 
-    // Handle file input change (mobile)
+    /** @param {Event} e @returns {Promise<void>} */
     const handleFileChange = async (e) => {
-        const file = e.target.files[0];
+        const input = /** @type {HTMLInputElement} */ (e.target);
+        const file = input.files && input.files[0];
         if (!file) return;
         await loadFileContent(file);
-        e.target.value = '';
+        input.value = '';
         configStore.currentFileHandle = null;
     };
 
-    // Load file content (shared)
+    /** @param {File} file @returns {Promise<void>} */
     const loadFileContent = async (file) => {
         uiStore.isProcessing = true;
         try {

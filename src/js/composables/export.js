@@ -1,8 +1,14 @@
 // js/composables/export.js - エクスポートユーティリティ
 window.MangaApp = window.MangaApp || {};
 
+/** @type {ExportUtils} */
 window.MangaApp.exportUtils = {
-    // rangeType に応じた対象ページインデックス配列
+    /**
+     * @param {ExportSettings} settings
+     * @param {number} totalPages
+     * @param {number} activeIndex
+     * @returns {number[]}
+     */
     getTargetPageIndices(settings, totalPages, activeIndex) {
         if (settings.rangeType === 'current') {
             return [activeIndex];
@@ -18,7 +24,13 @@ window.MangaApp.exportUtils = {
         return Array.from({ length: totalPages }, (_, i) => i);
     },
 
-    // htmlToImage.toPng の共通オプション生成
+    /**
+     * @param {HTMLElement} el
+     * @param {number} canvasW
+     * @param {number} canvasH
+     * @param {boolean} [transparent]
+     * @returns {HtmlToImageOptions}
+     */
     createHtmlToImageOptions(el, canvasW, canvasH, transparent) {
         if (transparent === undefined) transparent = false;
         const domW = el.clientWidth;

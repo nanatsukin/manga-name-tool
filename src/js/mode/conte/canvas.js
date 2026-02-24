@@ -1,16 +1,23 @@
 // js/mode/conte/canvas.js - Canvas drawing, modal, save/restore
 window.MangaApp = window.MangaApp || {};
 
+/** @param {CanvasModuleDeps} deps @returns {CanvasModuleInstance} */
 window.MangaApp.createCanvas = function (deps) {
     const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
     const pageStore = deps.pageStore;
+    /** @type {UiStoreInstance} */
     const uiStore = deps.uiStore;
+    /** @type {HistoryStoreInstance} */
     const historyStore = deps.historyStore;
+    /** @type {HelpersInstance} */
     const helpers = deps.helpers;
+    /** @type {CanvasUtils} */
     const canvasUtils = deps.canvasUtils;
 
-    // Save all canvases
+    /** @returns {Promise<void>} */
     const saveAllCanvases = async () => {
+        /** @type {Promise<void>[]} */
         const promises = [];
         pageStore.pages.forEach(page => {
             page.drawings.forEach(d => {
@@ -44,7 +51,7 @@ window.MangaApp.createCanvas = function (deps) {
         tryRestore();
     };
 
-    // Open drawing modal
+    /** @param {Drawing} drawing @returns {Promise<void>} */
     const openDrawingModal = async (drawing) => {
         await saveAllCanvases();
         uiStore.currentEditingDrawing = drawing;
@@ -84,24 +91,31 @@ window.MangaApp.createCanvas = function (deps) {
         }
     };
 
-    // Canvas drawing
+    /**
+     * @param {MouseEvent | TouchEvent} e
+     * @param {Drawing} drawing
+     */
     const startDraw = (e, drawing) => {
         if (e.type === 'touchstart') e.preventDefault();
         uiStore.isDrawing = true;
         uiStore.lastActiveDrawingId = drawing.id;
-        const canvas = e.target;
+        const canvas = /** @type {HTMLCanvasElement} */ (e.target);
         const rect = canvas.getBoundingClientRect();
         const pos = helpers.getClientPos(e);
         uiStore.lastPos.x = pos.x - rect.left;
         uiStore.lastPos.y = pos.y - rect.top;
     };
 
+    /**
+     * @param {MouseEvent | TouchEvent} e
+     * @param {Drawing} drawing
+     */
     const draw = (e, drawing) => {
         if (!uiStore.isDrawing) return;
         if (e.type === 'touchmove') e.preventDefault();
 
-        const canvas = e.target;
-        const ctx = canvas.getContext('2d');
+        const canvas = /** @type {HTMLCanvasElement} */ (e.target);
+        const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
         const rect = canvas.getBoundingClientRect();
         const pos = helpers.getClientPos(e);
         const x = pos.x - rect.left;
@@ -119,6 +133,7 @@ window.MangaApp.createCanvas = function (deps) {
         uiStore.lastPos.y = y;
     };
 
+    /** @param {Drawing} [drawing] */
     const stopDraw = (drawing) => {
         if (uiStore.isDrawing) {
             uiStore.isDrawing = false;
@@ -138,7 +153,7 @@ window.MangaApp.createCanvas = function (deps) {
         });
     };
 
-    // Global keydown handler for conte mode undo/redo
+    /** @param {KeyboardEvent} e */
     const handleGlobalKeydown = (e) => {
         if (pageStore.currentMode !== 'conte') return;
         if (!uiStore.lastActiveDrawingId) return;

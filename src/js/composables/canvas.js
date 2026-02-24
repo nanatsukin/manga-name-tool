@@ -1,9 +1,13 @@
 // js/composables/canvas.js - Canvas Blob管理 + 描画履歴
 window.MangaApp = window.MangaApp || {};
 
+/** @type {CanvasUtils} */
 window.MangaApp.canvasUtils = {
-    // canvasをBlobに変換し、drawing.imgSrc と drawing.cachedBlob を更新
-    // 旧blob URLは履歴内にない場合のみ revoke する
+    /**
+     * @param {HTMLCanvasElement} canvasEl
+     * @param {Drawing} drawing
+     * @returns {Promise<void>}
+     */
     saveDrawingBlob(canvasEl, drawing) {
         return new Promise(resolve => {
             canvasEl.toBlob(blob => {
@@ -18,7 +22,11 @@ window.MangaApp.canvasUtils = {
         });
     },
 
-    // 描画履歴の push (初期化・未来切り捨て・step更新を一括処理)
+    /**
+     * @param {Drawing} drawing
+     * @param {Blob} blob
+     * @returns {string}
+     */
     pushDrawingHistory(drawing, blob) {
         const url = URL.createObjectURL(blob);
         if (!drawing.history) drawing.history = [];
@@ -35,7 +43,7 @@ window.MangaApp.canvasUtils = {
         return url;
     },
 
-    // drawing.history と drawing.historyStep を imgSrc有無に応じて初期化
+    /** @param {Drawing} drawing @returns {void} */
     initDrawingHistory(drawing) {
         drawing.history = drawing.imgSrc ? [drawing.imgSrc] : [];
         drawing.historyStep = drawing.imgSrc ? 0 : -1;

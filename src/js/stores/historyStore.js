@@ -6,19 +6,29 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
     const { ref } = Vue;
 
     // Cross-store dependencies (injected via setStores)
+    /** @type {PageStoreInstance | null} */
     let _pageStore = null;
+    /** @type {UiStoreInstance | null} */
     let _uiStore = null;
+    /** @type {CanvasUtils | null} */
     let _canvasUtils = null;
+    /**
+     * @param {PageStoreInstance} pageStore
+     * @param {UiStoreInstance} uiStore
+     */
     const setStores = (pageStore, uiStore) => {
         _pageStore = pageStore;
         _uiStore = uiStore;
     };
+    /** @param {CanvasUtils} canvasUtils */
     const setCanvasUtils = (canvasUtils) => {
         _canvasUtils = canvasUtils;
     };
 
     // --- Name mode history ---
+    /** @type {VueRef<string[]>} */
     const nameHistory = ref([]);
+    /** @type {VueRef<number>} */
     const nameHistoryIndex = ref(-1);
 
     const recordNameHistory = () => {
@@ -66,6 +76,7 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
     };
 
     // --- Drawing canvas history ---
+    /** @param {Drawing} drawing */
     const saveHistory = (drawing) => {
         const canvas = _uiStore.showDrawingModal ? _uiStore.modalCanvasRef : _uiStore.canvasRefs[drawing.id];
         if (!canvas) return;
@@ -79,6 +90,11 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
         });
     };
 
+    /**
+     * @param {Drawing} drawing
+     * @param {string} url
+     * @param {HTMLCanvasElement | null} [targetCanvas]
+     */
     const drawToCanvas = (drawing, url, targetCanvas = null) => {
         const canvas = targetCanvas || (_uiStore.showDrawingModal ? _uiStore.modalCanvasRef : _uiStore.canvasRefs[drawing.id]);
         if (!canvas) {
@@ -96,6 +112,7 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
         img.src = url;
     };
 
+    /** @param {Drawing} drawing */
     const undo = (drawing) => {
         if (!drawing || drawing.historyStep <= 0) return;
         drawing.historyStep--;
@@ -104,6 +121,7 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
         drawToCanvas(drawing, prevUrl);
     };
 
+    /** @param {Drawing} drawing */
     const redo = (drawing) => {
         if (!drawing || !drawing.history || drawing.historyStep >= drawing.history.length - 1) return;
         drawing.historyStep++;
@@ -112,10 +130,12 @@ window.MangaApp.stores.useHistoryStore = Pinia.defineStore('history', () => {
         drawToCanvas(drawing, nextUrl);
     };
 
+    /** @param {Drawing} drawing @returns {boolean} */
     const canUndo = (drawing) => {
         return drawing && drawing.history && drawing.history.length > 1 && drawing.historyStep > 0;
     };
 
+    /** @param {Drawing} drawing @returns {boolean} */
     const canRedo = (drawing) => {
         return drawing && drawing.history && drawing.historyStep < drawing.history.length - 1;
     };
