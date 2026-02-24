@@ -70,11 +70,17 @@
 
         .spread-container {
             display: flex;
-            justify-content: center;
             flex-direction: row-reverse;
             /* 右開き */
             gap: 10px;
+        }
+
+        .name-spread-row {
             margin-bottom: 40px;
+        }
+
+        .active-name-page {
+            box-shadow: 0 0 0 3px #3b82f6, 0 4px 6px rgba(0, 0, 0, 0.3);
         }
 
         /* --- ドラッグ＆ドロップ(D&D) スタイル --- */

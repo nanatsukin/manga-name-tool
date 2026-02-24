@@ -248,55 +248,54 @@
             </div>
 
             <!-- Layer B: 工程ツールバー (デスクトップのみ) -->
-            <div class="hidden md:flex justify-center items-center h-8 px-2 gap-2 border-t border-gray-700 bg-gray-900">
+            <div class="relative hidden md:flex items-center h-8 px-2 gap-2 border-t border-gray-700 bg-gray-800">
                 <!-- プロットモード -->
                 <template v-if="currentMode === 'plot'">
-                    <button @click="sortAllScriptsByConteOrder"
-                        class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
-                        <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
-                    </button>
+                    <div class="ml-auto">
+                        <button @click="sortAllScriptsByConteOrder"
+                            class="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                            <i class="fas fa-sort-amount-down"></i> 全ページをコンテ順に整列
+                        </button>
+                    </div>
                 </template>
 
                 <!-- コンテモード -->
                 <template v-else-if="currentMode === 'conte'">
-                    <button @click="prevPage" :disabled="activePageIndex === 0"
-                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
-                        <i class="fas fa-chevron-left text-xs"></i>
-                    </button>
-                    <span class="text-xs text-gray-300 w-20 text-center">Page {{ activePageIndex + 1 }}</span>
-                    <button @click="nextPage" :disabled="activePageIndex === pages.length - 1"
-                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
-                        <i class="fas fa-chevron-right text-xs"></i>
-                    </button>
-                    <div class="w-px h-4 bg-gray-600 mx-1"></div>
-                    <button @click="addDrawing(activePageIndex)"
-                        class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
-                        <i class="fas fa-plus"></i> コマ追加
-                    </button>
-                    <button @click="clearCurrentPageCanvas"
-                        class="border border-gray-600 text-red-400 hover:bg-red-900/40 hover:border-red-700 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
-                        <i class="fas fa-trash-can"></i> 全消去
-                    </button>
+                    <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                        <button @click="prevPage" :disabled="activePageIndex === 0"
+                            class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <span class="text-xs text-gray-300 w-20 text-center">Page {{ activePageIndex + 1 }}</span>
+                        <button @click="nextPage" :disabled="activePageIndex === pages.length - 1"
+                            class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center disabled:opacity-30 transition">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                    <div class="ml-auto flex items-center gap-2">
+                        <button @click="addDrawing(activePageIndex)"
+                            class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                            <i class="fas fa-plus"></i> コマ追加
+                        </button>
+                        <button @click="clearCurrentPageCanvas"
+                            class="border border-gray-600 text-red-400 hover:bg-red-900/40 hover:border-red-700 px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
+                            <i class="fas fa-trash-can"></i> 全消去
+                        </button>
+                    </div>
                 </template>
 
                 <!-- ネームモード -->
                 <template v-else-if="currentMode === 'name'">
-                    <button @click="autoLayoutCurrentPage"
-                        class="bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs flex items-center gap-1.5 transition">
-                        <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
-                    </button>
-                    <button @click="undoName()" title="元に戻す"
-                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
-                        <i class="fas fa-rotate-left text-sm"></i>
-                    </button>
-                    <button @click="redoName()" title="やり直す"
-                        class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
-                        <i class="fas fa-rotate-right text-sm"></i>
-                    </button>
-                    <button @click="addNoteToCurrentPage"
-                        class="text-gray-500 hover:text-gray-300 px-2 py-1 rounded text-xs transition flex items-center gap-1">
-                        <i class="fas fa-sticky-note"></i> ＋注意書き
-                    </button>
+                    <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+                        <button @click="undoName()" title="元に戻す"
+                            class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
+                            <i class="fas fa-rotate-left text-sm"></i>
+                        </button>
+                        <button @click="redoName()" title="やり直す"
+                            class="bg-gray-700 hover:bg-gray-600 text-white w-7 h-7 rounded flex items-center justify-center transition">
+                            <i class="fas fa-rotate-right text-sm"></i>
+                        </button>
+                    </div>
                 </template>
             </div>
 
@@ -733,14 +732,35 @@
                 @mousedown="selectItem(null)">
 
 
-                <div class="flex flex-col items-center origin-top pb-20">
-                    <div v-for="(spread, sIdx) in spreads" :key="sIdx" class="spread-container"
+                <div class="flex flex-col origin-top pb-20">
+                    <div v-for="(spread, sIdx) in spreads" :key="sIdx"
+                        class="flex items-start justify-center gap-4 name-spread-row"
                         :data-spread-idx="sIdx"
                         :style="{ minHeight: pageStyle.height }">
+                        <!-- 左スロット（2ページ見開きの偶数ページ＝左ページの場合はインスペクタ、それ以外はスペーサー） -->
+                        <div class="w-40 flex-shrink-0 self-start">
+                            <div v-if="spread.length === 2 && spread.some(p => p.pageIndex === activePageIndex) && activePageIndex % 2 === 0"
+                                class="p-3 bg-gray-800 rounded-lg border border-gray-600 flex flex-col gap-2 no-export">
+                                <p class="text-xs text-gray-400 font-bold">
+                                    <i class="fas fa-file-alt mr-1"></i>P{{ activePageIndex + 1 }}
+                                </p>
+                                <button @click.stop="autoLayoutCurrentPage"
+                                    class="bg-blue-700 hover:bg-blue-600 text-white px-2 py-1.5 rounded text-xs flex items-center gap-1.5 transition w-full">
+                                    <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
+                                </button>
+                                <button @click.stop="addNoteToCurrentPage"
+                                    class="text-gray-400 hover:text-gray-200 border border-gray-600 hover:border-gray-400 px-2 py-1.5 rounded text-xs flex items-center gap-1 transition w-full">
+                                    <i class="fas fa-sticky-note"></i> ＋注意書き
+                                </button>
+                            </div>
+                        </div>
+                        <!-- ページ群 -->
+                        <div class="spread-container">
                         <template v-if="visibleSpreadIndices.has(sIdx)">
                         <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
                             :id="'render-page-' + page.pageIndex" :style="pageStyle"
-                            :class="{'hide-for-text-layer': isTextLayerMode, 'hide-guides': isHideGuideMode, 'hide-drawings': isHideDrawingMode, 'force-transparent': isTransparentMode}">
+                            :class="{'hide-for-text-layer': isTextLayerMode, 'hide-guides': isHideGuideMode, 'hide-drawings': isHideDrawingMode, 'force-transparent': isTransparentMode, 'active-name-page': page.pageIndex === activePageIndex}"
+                            @mousedown.stop="selectItem(null); setActivePage(page.pageIndex)">
 
                             <svg class="guide-layer no-export" :style="{width: '100%', height: '100%'}">
                                 <rect class="guide-rect" :x="guideProps(page.pageIndex).safeX"
@@ -763,8 +783,8 @@
                                 class="absolute border-2 border-black hover:border-blue-500 transition-colors group/drawing"
                                 :class="{'selected-item': selectedItemId === drawing.id && !isImageEditMode, 'image-edit-mode': selectedItemId === drawing.id && isImageEditMode}"
                                 :style="{ left: drawing.layout.x + 'px', top: drawing.layout.y + 'px', width: drawing.layout.w + 'px', height: drawing.layout.h + 'px', zIndex: 1 }"
-                                @mousedown.stop="selectItem(drawing.id); startLayoutDrag($event, drawing)"
-                                @touchstart.stop="selectItem(drawing.id); startLayoutDrag($event, drawing)"
+                                @mousedown.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
+                                @touchstart.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
                                 @wheel.stop.prevent="onImageWheel($event, drawing)">
                                 <div class="absolute inset-0 overflow-hidden pointer-events-none">
                                     <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
@@ -819,8 +839,8 @@
                                 :id="'name-script-' + script.id"
                                 :class="{'selected-item border-blue-500 bg-yellow-100 bg-opacity-20': selectedItemId === script.id}"
                                 :style="{ left: script.layout.x + 'px', top: script.layout.y + 'px', zIndex: 10 }"
-                                @mousedown.stop="selectItem(script.id); startLayoutDrag($event, script)"
-                                @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script)"
+                                @mousedown.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
+                                @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
                                 @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
 
                                 <!-- 注意書きの場合（横書き・赤字） -->
@@ -831,7 +851,7 @@
                                 </div>
 
                                 <!-- 通常のセリフ・ト書き（縦書き） -->
-                                <div v-else class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF', 
+                                <div v-else class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF',
                                          fontFamily: pageConfig.fontFamily }">
                                     {{ script.char ? script.text : `（${script.text}）` }}
                                 </div>
@@ -855,6 +875,24 @@
                                 class="manga-page" :style="pageStyle">
                             </div>
                         </template>
+                        </div>
+                        <!-- 右スロット（左に表示しない場合のみインスペクタ、それ以外はスペーサー） -->
+                        <div class="w-40 flex-shrink-0 self-start">
+                            <div v-if="spread.some(p => p.pageIndex === activePageIndex) && !(spread.length === 2 && activePageIndex % 2 === 0)"
+                                class="p-3 bg-gray-800 rounded-lg border border-gray-600 flex flex-col gap-2 no-export">
+                                <p class="text-xs text-gray-400 font-bold">
+                                    <i class="fas fa-file-alt mr-1"></i>P{{ activePageIndex + 1 }}
+                                </p>
+                                <button @click.stop="autoLayoutCurrentPage"
+                                    class="bg-blue-700 hover:bg-blue-600 text-white px-2 py-1.5 rounded text-xs flex items-center gap-1.5 transition w-full">
+                                    <i class="fas fa-wand-magic-sparkles"></i> コマ・セリフ自動整列
+                                </button>
+                                <button @click.stop="addNoteToCurrentPage"
+                                    class="text-gray-400 hover:text-gray-200 border border-gray-600 hover:border-gray-400 px-2 py-1.5 rounded text-xs flex items-center gap-1 transition w-full">
+                                    <i class="fas fa-sticky-note"></i> ＋注意書き
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

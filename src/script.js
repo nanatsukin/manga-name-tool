@@ -406,6 +406,7 @@ const app = createApp({
             jumpToName: pageOps.jumpToName,
             sortAllScriptsByConteOrder: pageOps.sortAllScriptsByConteOrder,
             applyFontSizeToAll: pageOps.applyFontSizeToAll,
+            setActivePage: (/** @type {number} */ idx) => { pageStore.activePageIndex = idx; },
 
             // Drag plot
             dragStart: dragPlot.dragStart,
