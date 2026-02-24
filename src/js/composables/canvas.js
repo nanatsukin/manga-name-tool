@@ -33,12 +33,15 @@ window.MangaApp.canvasUtils = {
      * @returns {string} 追加した blob URL
      */
     pushDrawingHistory(drawing, blob) {
+        const HISTORY_LIMIT = 20;
         const url = URL.createObjectURL(blob);
         if (!drawing.history) drawing.history = [];
         if (drawing.historyStep === undefined) drawing.historyStep = -1;
 
-        // 現在位置より後ろに残っている redo 用履歴を削除
+        // 現在位置より後ろに残っている redo 用履歴を revoke してから削除
         if (drawing.historyStep < drawing.history.length - 1) {
+            const discarded = drawing.history.slice(drawing.historyStep + 1);
+            discarded.forEach(u => URL.revokeObjectURL(u));
             drawing.history = drawing.history.slice(0, drawing.historyStep + 1);
         }
 
@@ -46,6 +49,14 @@ window.MangaApp.canvasUtils = {
         drawing.historyStep++;
         drawing.imgSrc = url;
         drawing.cachedBlob = blob;
+
+        // 上限超過時: 最古エントリを revoke して削除（現在表示中の URL は revoke しない）
+        if (drawing.history.length > HISTORY_LIMIT) {
+            const dropped = drawing.history.shift();
+            drawing.historyStep--;
+            if (dropped !== drawing.imgSrc) URL.revokeObjectURL(dropped);
+        }
+
         return url;
     },
 

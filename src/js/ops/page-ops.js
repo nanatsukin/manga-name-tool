@@ -302,10 +302,13 @@ window.MangaApp.createPageOps = function (deps) {
      */
     const removeDrawing = (pIdx, idx) => {
         if (confirm('削除しますか？')) {
-            const removedId = pageStore.pages[pIdx].drawings[idx].id;
-            // 既存の blob URL をメモリリーク防止のため revoke する
-            if (pageStore.pages[pIdx].drawings[idx].imgSrc) {
-                URL.revokeObjectURL(pageStore.pages[pIdx].drawings[idx].imgSrc);
+            const drawing = pageStore.pages[pIdx].drawings[idx];
+            const removedId = drawing.id;
+            // history 配列内の全 blob URL を revoke してメモリを解放する
+            if (drawing.history && Array.isArray(drawing.history)) {
+                drawing.history.forEach(u => { if (u && u.startsWith('blob:')) URL.revokeObjectURL(u); });
+            } else if (drawing.imgSrc && drawing.imgSrc.startsWith('blob:')) {
+                URL.revokeObjectURL(drawing.imgSrc);
             }
             // 削除した Drawing を参照しているセリフの drawingId をクリアする
             pageStore.pages[pIdx].scripts.forEach(s => {

@@ -130,8 +130,106 @@ const app = createApp({
         // 画面幅が変わったとき（ページ設定の scale 変更など）、小画面判定を更新する
         watch(displayW, () => uiStore.checkScreenSize());
 
+        // --- Computed ---
+        // コンテモード用: アクティブページのセリフを drawingId でグループ化した Map。
+        // drag 状態が変化しても再計算されず、pages / activePageIndex の変化時のみ再計算される。
+        const activePageScriptsByDrawingId = computed(() => {
+            const page = pageStore.pages[pageStore.activePageIndex];
+            if (!page) return {};
+            const validIds = new Set(page.drawings.map(d => d.id));
+            /** @type {Record<string, Script[]>} */
+            const map = {};
+            page.scripts.forEach(s => {
+                const key = (s.drawingId && validIds.has(s.drawingId)) ? s.drawingId : '__unassigned__';
+                if (!map[key]) map[key] = [];
+                map[key].push(s);
+            });
+            return map;
+        });
+
+        // --- Virtual Scroll ---
+        // ネームモード: ビューポート外の見開きコンテンツを非レンダリングにして DOM ノード数を削減する。
+        const visibleSpreadIndices = ref(/** @type {Set<number>} */ (new Set()));
+        /** @type {IntersectionObserver | null} */
+        let _spreadObserver = null;
+
+        const _initSpreadObserver = () => {
+            if (_spreadObserver) _spreadObserver.disconnect();
+            // Set をリセットする（モード切替時に古い状態をクリア）
+            visibleSpreadIndices.value = new Set();
+            _spreadObserver = new IntersectionObserver((entries) => {
+                const next = new Set(visibleSpreadIndices.value);
+                entries.forEach(entry => {
+                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.spreadIdx);
+                    if (entry.isIntersecting) next.add(idx); else next.delete(idx);
+                });
+                visibleSpreadIndices.value = next;
+            }, { rootMargin: '200px', threshold: 0 });
+        };
+
+        // プロットモード: ビューポート外のページセクションを非レンダリングにしてドラッグ時の再レンダリングを削減する。
+        const visiblePlotPageIndices = ref(/** @type {Set<number>} */ (new Set()));
+        /** @type {IntersectionObserver | null} */
+        let _plotObserver = null;
+
+        const _initPlotObserver = () => {
+            if (_plotObserver) _plotObserver.disconnect();
+            // Set をリセットする（モード切替時に古い状態をクリア）
+            visiblePlotPageIndices.value = new Set();
+            _plotObserver = new IntersectionObserver((entries) => {
+                const next = new Set(visiblePlotPageIndices.value);
+                entries.forEach(entry => {
+                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.plotPageIdx);
+                    if (entry.isIntersecting) next.add(idx); else next.delete(idx);
+                });
+                visiblePlotPageIndices.value = next;
+                // 新たに表示された要素内の Textarea だけ高さを再計算する
+                nextTick(() => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        const textareas = /** @type {NodeListOf<HTMLTextAreaElement>} */ (entry.target.querySelectorAll('textarea.panel-input'));
+                        textareas.forEach(ta => {
+                            ta.style.height = 'auto';
+                            ta.style.height = ta.scrollHeight + 'px';
+                        });
+                    });
+                });
+            }, { rootMargin: '300px', threshold: 0 });
+        };
+
+        // ページ追加・削除時: Observer を再生成せず新しい要素だけ observe する。
+        // _initXxxObserver() を呼ぶと Set がリセットされてフラッシュが発生するため使わない。
+        // DOM から削除された要素は IntersectionObserver が自動的に監視を解除する。
+        watch(pages, () => {
+            nextTick(() => {
+                if (_spreadObserver) {
+                    document.querySelectorAll('[data-spread-idx]').forEach(el => _spreadObserver.observe(el));
+                }
+                if (_plotObserver) {
+                    document.querySelectorAll('[data-plot-page-idx]').forEach(el => _plotObserver.observe(el));
+                }
+            });
+        }, { deep: false });
+
+        // モード切替時に Observer を再登録する。
+        // 各モードパネルは v-if で制御されるため、モード変更で DOM が完全に再生成される。
+        // 古い Observer は破棄された要素を監視しているため、新しい要素を observe し直す必要がある。
+        // また、プロットモードに戻った際は Textarea の高さを再計算する（v-if で DOM が再生成されるため）。
+        watch(currentMode, (/** @type {string} */ newMode) => {
+            nextTick(() => {
+                if (newMode === 'name') {
+                    _initSpreadObserver();
+                    document.querySelectorAll('[data-spread-idx]').forEach(el => _spreadObserver.observe(el));
+                } else if (newMode === 'plot') {
+                    _initPlotObserver();
+                    document.querySelectorAll('[data-plot-page-idx]').forEach(el => _plotObserver.observe(el));
+                }
+            });
+        });
+
         // --- Lifecycle ---
         onMounted(async () => {
+            uiStore.isProcessing = true; // 起動直後のチカつき防止
             try {
                 // IndexedDB から前回のプロジェクトを復元する
                 const restored = await autoSaveUtils.restoreFromIDB(
@@ -159,6 +257,14 @@ const app = createApp({
 
             // グローバルキーボードショートカット（Ctrl+Z / Ctrl+Y）を登録する
             window.addEventListener('keydown', canvas.handleGlobalKeydown);
+
+            // 仮想スクロール用 IntersectionObserver を初期化する
+            _initSpreadObserver();
+            _initPlotObserver();
+            nextTick(() => {
+                document.querySelectorAll('[data-spread-idx]').forEach(el => _spreadObserver.observe(el));
+                document.querySelectorAll('[data-plot-page-idx]').forEach(el => _plotObserver.observe(el));
+            });
         });
 
         // 再レンダリング前に DOM ref の辞書をクリアする（古い ref が残らないようにする）
@@ -232,6 +338,9 @@ const app = createApp({
             copyAllPlots: helpers.copyAllPlots,
             getUnassignedScripts: helpers.getUnassignedScripts,
             getScriptsForDrawing: helpers.getScriptsForDrawing,
+            activePageScriptsByDrawingId,
+            visibleSpreadIndices,
+            visiblePlotPageIndices,
             getClientPos: helpers.getClientPos,
 
             // History

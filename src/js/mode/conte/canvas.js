@@ -16,6 +16,23 @@ window.MangaApp.createCanvas = function (deps) {
     const canvasUtils = deps.canvasUtils;
 
     /**
+     * Canvas の 2D コンテキストを WeakMap でキャッシュして返す。
+     * mousemove 毎に getContext('2d') を呼ぶコストを削減する。
+     * WeakMap を使うため Canvas が GC されると自動的にエントリも消える。
+     * @type {WeakMap<HTMLCanvasElement, CanvasRenderingContext2D>}
+     */
+    const _ctxCache = new WeakMap();
+    /** @param {HTMLCanvasElement} canvas @returns {CanvasRenderingContext2D} */
+    const getCtx = (canvas) => {
+        let ctx = _ctxCache.get(canvas);
+        if (!ctx) {
+            ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+            _ctxCache.set(canvas, ctx);
+        }
+        return ctx;
+    };
+
+    /**
      * 全ページの全 Drawing の Canvas 内容を Blob として保存する。
      * モード切替前やエクスポート前に呼び出して、描画データを imgSrc/cachedBlob に確定させる。
      * @returns {Promise<void>}
@@ -80,7 +97,7 @@ window.MangaApp.createCanvas = function (deps) {
         const canvas = uiStore.modalCanvasRef;
         if (canvas && drawing.imgSrc) {
             // 既存の描画内容をモーダル Canvas に転写する
-            const ctx = canvas.getContext('2d');
+            const ctx = getCtx(canvas);
             const img = new Image();
             img.onload = () => {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -89,7 +106,7 @@ window.MangaApp.createCanvas = function (deps) {
             img.src = drawing.imgSrc;
         } else if (canvas) {
             // 新規 Drawing は白背景で初期化する
-            const ctx = canvas.getContext('2d');
+            const ctx = getCtx(canvas);
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
@@ -144,7 +161,7 @@ window.MangaApp.createCanvas = function (deps) {
         if (e.type === 'touchmove') e.preventDefault();
 
         const canvas = /** @type {HTMLCanvasElement} */ (e.target);
-        const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+        const ctx = getCtx(canvas);
         const rect = canvas.getBoundingClientRect();
         const pos = helpers.getClientPos(e);
         const x = pos.x - rect.left;
@@ -186,7 +203,7 @@ window.MangaApp.createCanvas = function (deps) {
         if (!confirm('全消去しますか？')) return;
         pageStore.pages[pageStore.activePageIndex].drawings.forEach(d => {
             const cvs = uiStore.canvasRefs[d.id];
-            if (cvs) cvs.getContext('2d').clearRect(0, 0, 360, 240);
+            if (cvs) getCtx(cvs).clearRect(0, 0, 360, 240);
             historyStore.saveHistory(d);
         });
     };
