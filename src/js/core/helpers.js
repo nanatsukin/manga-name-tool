@@ -1,0 +1,229 @@
+// js/core/helpers.js - Coordinate helpers, guide calculation, textarea resize, etc.
+window.MangaApp = window.MangaApp || {};
+
+/** @param {HelpersDeps} deps @returns {HelpersInstance} */
+window.MangaApp.createHelpers = function (deps) {
+    const { nextTick } = deps.Vue;
+    /** @type {PageStoreInstance} */
+    const pageStore = deps.pageStore;
+    /** @type {ConfigStoreInstance} */
+    const configStore = deps.configStore;
+    /** @type {UiStoreInstance} */
+    const uiStore = deps.uiStore;
+    /** @type {LayoutUtils} */
+    const layoutUtils = deps.layoutUtils;
+
+    /** @param {any} e @returns {{ x: number, y: number }} */
+    const getClientPos = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    };
+
+    /** @param {number} pageIndex @returns {GuideProps} */
+    const guideProps = (pageIndex) => {
+        const { canvasW, canvasH, finishW, finishH, bleed, scale } = configStore.pageConfig;
+
+        const { safeX, safeY, safeW, safeH, fx, fy } = layoutUtils.getSafeArea(configStore.pageConfig, pageIndex, scale);
+
+        const finishX = fx * scale;
+        const finishY = fy * scale;
+        const finishW_s = finishW * scale;
+        const finishH_s = finishH * scale;
+
+        const bleedX = (fx - bleed) * scale;
+        const bleedY = (fy - bleed) * scale;
+        const bleedW = (finishW + bleed * 2) * scale;
+        const bleedH = (finishH + bleed * 2) * scale;
+
+        const cx = (canvasW / 2) * scale;
+        const cy = (canvasH / 2) * scale;
+
+        const tExt = 200 * scale;
+        const finishX_r = finishX + finishW_s;
+        const finishY_b = finishY + finishH_s;
+        const bleedX_r = bleedX + bleedW;
+        const bleedY_b = bleedY + bleedH;
+
+        const cLen = 200 * scale;
+        let dCenter = `M${cx},${bleedY} V${bleedY - tExt} M${cx - cLen},${bleedY - tExt / 2} H${cx + cLen} `;
+        dCenter += `M${cx},${bleedY_b} V${bleedY_b + tExt} M${cx - cLen},${bleedY_b + tExt / 2} H${cx + cLen} `;
+        dCenter += `M${bleedX},${cy} H${bleedX - tExt} M${bleedX - tExt / 2},${cy - cLen} V${cy + cLen} `;
+        dCenter += `M${bleedX_r},${cy} H${bleedX_r + tExt} M${bleedX_r + tExt / 2},${cy - cLen} V${cy + cLen} `;
+
+        const cornerLen = tExt;
+        let dTonbo = `M${finishX},${bleedY} V${bleedY - cornerLen} M${bleedX},${bleedY} V${bleedY - cornerLen} `;
+        dTonbo += `M${bleedX},${finishY} H${bleedX - cornerLen} M${bleedX},${bleedY} H${bleedX - cornerLen} `;
+        dTonbo += `M${finishX_r},${bleedY} V${bleedY - cornerLen} M${bleedX_r},${bleedY} V${bleedY - cornerLen} `;
+        dTonbo += `M${bleedX_r},${finishY} H${bleedX_r + cornerLen} M${bleedX_r},${bleedY} H${bleedX_r + cornerLen} `;
+        dTonbo += `M${finishX},${bleedY_b} V${bleedY_b + cornerLen} M${bleedX},${bleedY_b} V${bleedY_b + cornerLen} `;
+        dTonbo += `M${bleedX},${finishY_b} H${bleedX - cornerLen} M${bleedX},${bleedY_b} H${bleedX - cornerLen} `;
+        dTonbo += `M${finishX_r},${bleedY_b} V${bleedY_b + cornerLen} M${bleedX_r},${bleedY_b} V${bleedY_b + cornerLen} `;
+        dTonbo += `M${bleedX_r},${finishY_b} H${bleedX_r + cornerLen} M${bleedX_r},${bleedY_b} H${bleedX_r + cornerLen} `;
+
+        return {
+            safeX, safeY, safeW, safeH,
+            finishX, finishY, finishW: finishW_s, finishH: finishH_s,
+            bleedX, bleedY, bleedW, bleedH,
+            centerPath: dCenter, tonboPath: dTonbo
+        };
+    };
+
+    // Textarea resize
+    const resizeTextareas = () => {
+        nextTick(() => {
+            const textareas = /** @type {NodeListOf<HTMLTextAreaElement>} */ (document.querySelectorAll('textarea.panel-input'));
+            textareas.forEach(el => {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+            });
+        });
+    };
+
+    /** @param {Event} e */
+    const adjustHeight = (e) => {
+        const el = /** @type {HTMLTextAreaElement} */ (e.target);
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    };
+
+    /**
+     * @param {HTMLElement | null} el
+     * @param {number} p
+     * @param {number} s
+     * @param {'char' | 'text'} type
+     */
+    const setInputRef = (el, p, s, type) => {
+        if (el) uiStore.scriptInputRefs[`${p}-${s}-${type}`] = el;
+    };
+
+    /** @param {number} p @param {number} s */
+    const focusText = (p, s) => {
+        nextTick(() => {
+            const el = uiStore.scriptInputRefs[`${p}-${s}-text`];
+            if (el) el.focus();
+        });
+    };
+
+    /**
+     * @param {number} pIndex
+     * @param {number} sIndex
+     * @param {'text' | 'char'} currentType
+     */
+    const focusPrev = (pIndex, sIndex, currentType) => {
+        if (currentType === 'text') {
+            nextTick(() => {
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex}-char`];
+                if (el) el.focus();
+            });
+        } else if (currentType === 'char') {
+            if (sIndex > 0) {
+                nextTick(() => {
+                    const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex - 1}-text`];
+                    if (el) el.focus();
+                });
+            } else if (pIndex > 0) {
+                const prevPage = pageStore.pages[pIndex - 1];
+                if (prevPage.scripts.length > 0) {
+                    nextTick(() => {
+                        const el = uiStore.scriptInputRefs[`${pIndex - 1}-${prevPage.scripts.length - 1}-text`];
+                        if (el) el.focus();
+                    });
+                }
+            }
+        }
+    };
+
+    /** @type {((pIdx: number) => void) | null} */
+    let _addScript = deps.addScript;
+    /** @param {(pIdx: number) => void} fn */
+    const setAddScript = (fn) => { _addScript = fn; };
+
+    /** @param {number} pIndex @param {number} sIndex */
+    const focusNext = (pIndex, sIndex) => {
+        const addScript = _addScript;
+        if (pageStore.pages[pIndex].scripts.length > sIndex + 1) {
+            nextTick(() => {
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-char`];
+                if (el) el.focus();
+            });
+        } else if (pageStore.pages.length > pIndex + 1) {
+            if (pageStore.pages[pIndex + 1].scripts.length === 0 && addScript) addScript(pIndex + 1);
+            nextTick(() => {
+                const el = uiStore.scriptInputRefs[`${pIndex + 1}-0-char`];
+                if (el) el.focus();
+            });
+        } else {
+            if (addScript) addScript(pIndex);
+            nextTick(() => {
+                const el = uiStore.scriptInputRefs[`${pIndex}-${sIndex + 1}-char`];
+                if (el) el.focus();
+            });
+        }
+    };
+
+    /** @param {Page} page @returns {string} */
+    const getPageTextPreview = (page) => {
+        if (!page.scripts) return '';
+        return page.scripts.filter(s => s.char).map(s => s.text).join(' / ');
+    };
+
+    /** @param {Page} page @returns {Promise<void>} */
+    const copyPageText = async (page) => {
+        const text = page.scripts.filter(s => s.char).map(s => s.text).join('\n\n');
+        try {
+            await navigator.clipboard.writeText(text);
+            uiStore.copiedPageId = page.id;
+            setTimeout(() => { uiStore.copiedPageId = null; }, 1000);
+        } catch (e) {
+            alert('コピー失敗: ' + e);
+        }
+    };
+
+    const copyAllPlots = async () => {
+        let output = "### マンガプロット構成案\n\n";
+        pageStore.pages.forEach((page, index) => {
+            output += `--- Page ${index + 1} ---\n`;
+            if (page.scripts.length === 0) {
+                output += "(セリフ・ト書きなし)\n";
+            } else {
+                page.scripts.forEach(script => {
+                    const name = script.char ? script.char.trim() : "";
+                    const text = script.text ? script.text.trim() : "";
+                    if (name === "" || name === "-") {
+                        output += `[ト書き] ${text}\n`;
+                    } else {
+                        output += `${name}：「${text}」\n`;
+                    }
+                });
+            }
+            output += "\n";
+        });
+        try {
+            await navigator.clipboard.writeText(output);
+            alert("全ページのプロットをクリップボードにコピーしました。\nGeminiなどのAIにそのまま貼り付けて相談できます。");
+        } catch (e) {
+            alert('コピー失敗: ' + e);
+        }
+    };
+
+    /** @param {number} pIdx @returns {Script[]} */
+    const getUnassignedScripts = (pIdx) => {
+        const page = pageStore.pages[pIdx];
+        const validDrawingIds = new Set(page.drawings.map(d => d.id));
+        return page.scripts.filter(s => !s.drawingId || !validDrawingIds.has(s.drawingId));
+    };
+
+    /** @param {number} pIdx @param {number} drawingId @returns {Script[]} */
+    const getScriptsForDrawing = (pIdx, drawingId) => {
+        return pageStore.pages[pIdx].scripts.filter(s => s.drawingId === drawingId);
+    };
+
+    return {
+        getClientPos, guideProps, resizeTextareas, adjustHeight,
+        setInputRef, focusText, focusPrev, focusNext, setAddScript,
+        getPageTextPreview, copyPageText, copyAllPlots,
+        getUnassignedScripts, getScriptsForDrawing
+    };
+};
