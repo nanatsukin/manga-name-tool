@@ -211,6 +211,30 @@ const app = createApp({
             });
         }, { deep: false });
 
+        // 表示倍率が変わったとき、全ページのレイアウト座標を比率で変換する
+        watch(() => pageConfig.value.scale, (/** @type {number} */ newScale, /** @type {number} */ oldScale) => {
+            if (uiStore.isRestoring) return;   // IDB 復元中は変換しない
+            if (!oldScale || oldScale === newScale) return;
+            const ratio = newScale / oldScale;
+            pageStore.pages.forEach(page => {
+                page.drawings.forEach(d => {
+                    d.layout.x *= ratio;
+                    d.layout.y *= ratio;
+                    d.layout.w *= ratio;
+                    d.layout.h *= ratio;
+                    if (d.inner) {
+                        d.inner.x = (d.inner.x || 0) * ratio;
+                        d.inner.y = (d.inner.y || 0) * ratio;
+                    }
+                });
+                page.scripts.forEach(s => {
+                    s.layout.x *= ratio;
+                    s.layout.y *= ratio;
+                    s.layout.fontSize = (s.layout.fontSize || configStore.pageConfig.defaultFontSize) * ratio;
+                });
+            });
+        });
+
         // モード切替時に Observer を再登録する。
         // 各モードパネルは v-if で制御されるため、モード変更で DOM が完全に再生成される。
         // 古い Observer は破棄された要素を監視しているため、新しい要素を observe し直す必要がある。
