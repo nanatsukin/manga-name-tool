@@ -727,12 +727,12 @@
                                                 <!-- 元に戻す・やり直すボタンは編集モーダルに移動 -->
                                             </div>
                                             <button @click="moveDrawingPage(activePageIndex, dIdx, -1)"
-                                                class="bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition border border-gray-600"
-                                                :disabled="activePageIndex===0"><i
+                                                class="bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition border border-gray-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-700 disabled:hover:text-gray-300"
+                                                title="前のページへ移動" :disabled="activePageIndex===0"><i
                                                     class="fas fa-chevron-left"></i></button>
                                             <button @click="moveDrawingPage(activePageIndex, dIdx, 1)"
-                                                class="bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition border border-gray-600"
-                                                :disabled="activePageIndex===pages.length-1"><i
+                                                class="bg-gray-700 text-gray-300 px-2 py-1 rounded hover:bg-blue-600 hover:text-white transition border border-gray-600 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-gray-700 disabled:hover:text-gray-300"
+                                                title="次のページへ移動" :disabled="activePageIndex===pages.length-1"><i
                                                     class="fas fa-chevron-right"></i></button>
                                         </div>
                                         <button @click="removeDrawing(activePageIndex, dIdx)"
