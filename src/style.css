@@ -1,8 +1,27 @@
+        /* --- テーマ変数 --- */
+        :root {
+            --color-bg-base: #111827;
+            --color-bg-surface: #1f2937;
+            --color-text-base: #e5e5e5;
+            --color-modal-overlay: rgba(15, 23, 42, 0.85);
+            --color-border-strong: #374151;
+            --color-scrollbar-thumb: #4b5563;
+        }
+
+        html[data-theme="light"] {
+            --color-bg-base: #f8fafc;
+            --color-bg-surface: #ffffff;
+            --color-text-base: #111827;
+            --color-modal-overlay: rgba(0, 0, 0, 0.5);
+            --color-border-strong: #e2e8f0;
+            --color-scrollbar-thumb: #cbd5e1;
+        }
+
         /* --- 基本スタイル --- */
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #111827;
-            color: #e5e5e5;
+            background-color: var(--color-bg-base);
+            color: var(--color-text-base);
             overflow: hidden;
         }
 
@@ -30,11 +49,11 @@
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #1f2937;
+            background: var(--color-bg-surface);
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #4b5563;
+            background: var(--color-scrollbar-thumb);
             border-radius: 4px;
         }
 
@@ -184,8 +203,7 @@
 
         /* --- モーダル・UIコンポーネント --- */
         .modal-overlay {
-            background: rgba(15, 23, 42, 0.85);
-            /* 少し濃く、青みを帯びた黒 */
+            background: var(--color-modal-overlay);
             backdrop-filter: blur(4px);
             /* 背景をぼかす */
             position: fixed;
@@ -197,15 +215,15 @@
         }
 
         .modal-content {
-            background: #1f2937;
+            background: var(--color-bg-surface);
             padding: 20px;
             border-radius: 8px;
             width: 100%;
             max-width: 600px;
             max-height: 90%;
             /* 85vh から少し広げるとスマホで見やすいです */
-            color: white;
-            border: 1px solid #374151;
+            color: var(--color-text-base);
+            border: 1px solid var(--color-border-strong);
             display: flex;
             flex-direction: column;
         }
@@ -213,7 +231,7 @@
         .panel-row {
             display: flex;
             /* md:flex-row をHTML側で指定するため、ここでは基本方向を決め打ちしない */
-            border-bottom: 1px solid #374151;
+            border-bottom: 1px solid var(--color-border-strong);
             padding: 0;
             /* 左右パディングをなくして幅を広げる */
             min-height: 44px;
@@ -361,4 +379,373 @@
                 min-width: 0;
                 overflow-y: auto;
             }
+        }
+
+        /* --- ライトモード: Tailwind クラス上書き --- */
+        /* 背景色 */
+        html[data-theme="light"] .bg-gray-900 {
+            background-color: #f8fafc !important;
+        }
+
+        html[data-theme="light"] .bg-gray-800 {
+            background-color: #ffffff !important;
+        }
+
+        html[data-theme="light"] .bg-gray-750 {
+            background-color: #f8fafc !important;
+        }
+
+        html[data-theme="light"] .bg-gray-700 {
+            background-color: #f1f5f9 !important;
+        }
+
+        html[data-theme="light"] .bg-gray-600 {
+            background-color: #e2e8f0 !important;
+        }
+
+        /* 透明度付き背景色 */
+        html[data-theme="light"] .bg-gray-900\/50 {
+            background-color: rgba(248, 250, 252, 0.5) !important;
+        }
+
+        html[data-theme="light"] .bg-gray-800\/80 {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+        }
+
+        html[data-theme="light"] .bg-gray-800\/30 {
+            background-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        html[data-theme="light"] .bg-gray-800\/10 {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        html[data-theme="light"] .bg-red-900\/10 {
+            background-color: rgba(254, 226, 226, 0.5) !important;
+        }
+
+        html[data-theme="light"] .bg-red-900\/20 {
+            background-color: rgba(254, 226, 226, 0.8) !important;
+        }
+
+        html[data-theme="light"] .bg-blue-900\/20 {
+            background-color: rgba(219, 234, 254, 0.8) !important;
+        }
+
+        html[data-theme="light"] .bg-green-900\/20 {
+            background-color: rgba(220, 252, 231, 0.8) !important;
+        }
+
+        /* ホバー時背景色 */
+        html[data-theme="light"] .hover\:bg-gray-800:hover {
+            background-color: #f1f5f9 !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-gray-750:hover {
+            background-color: #e2e8f0 !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-gray-700:hover {
+            background-color: #e2e8f0 !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-gray-600:hover {
+            background-color: #cbd5e1 !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-red-900\/20:hover {
+            background-color: rgba(254, 226, 226, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-blue-900\/20:hover {
+            background-color: rgba(219, 234, 254, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-green-900\/20:hover {
+            background-color: rgba(220, 252, 231, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-yellow-900\/20:hover {
+            background-color: rgba(254, 249, 195, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-purple-900\/20:hover {
+            background-color: rgba(243, 232, 255, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-pink-900\/20:hover {
+            background-color: rgba(252, 231, 243, 1) !important;
+        }
+
+        html[data-theme="light"] .hover\:bg-red-900\/40:hover {
+            background-color: rgba(254, 202, 202, 1) !important;
+        }
+
+        /* テキスト色 (基本) */
+        html[data-theme="light"] .text-white {
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .text-gray-100 {
+            color: #1f2937 !important;
+        }
+
+        html[data-theme="light"] .text-gray-200 {
+            color: #374151 !important;
+        }
+
+        html[data-theme="light"] .text-gray-300 {
+            color: #4b5563 !important;
+        }
+
+        html[data-theme="light"] .text-gray-400 {
+            color: #64748b !important;
+        }
+
+        html[data-theme="light"] .text-gray-500 {
+            color: #475569 !important;
+        }
+
+        html[data-theme="light"] .text-gray-600 {
+            color: #334155 !important;
+        }
+
+        /* ホバー時テキスト色 */
+        html[data-theme="light"] .hover\:text-white:hover {
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .hover\:text-gray-200:hover {
+            color: #374151 !important;
+        }
+
+        html[data-theme="light"] .hover\:text-gray-300:hover {
+            color: #4b5563 !important;
+        }
+
+        html[data-theme="light"] .hover\:text-gray-400:hover {
+            color: #64748b !important;
+        }
+
+        html[data-theme="light"] .hover\:text-red-400:hover {
+            color: #dc2626 !important;
+        }
+
+        html[data-theme="light"] .hover\:text-blue-400:hover {
+            color: #2563eb !important;
+        }
+
+        html[data-theme="light"] .hover\:text-green-400:hover {
+            color: #16a34a !important;
+        }
+
+        html[data-theme="light"] .hover\:text-yellow-400:hover {
+            color: #ca8a04 !important;
+        }
+
+        html[data-theme="light"] .hover\:text-purple-400:hover {
+            color: #9333ea !important;
+        }
+
+        html[data-theme="light"] .hover\:text-pink-400:hover {
+            color: #db2777 !important;
+        }
+
+        /* テキスト色 (カラー: 白背景で読みやすいように一段暗く) */
+        html[data-theme="light"] .text-blue-200 {
+            color: #2563eb !important;
+        }
+
+        html[data-theme="light"] .text-blue-300 {
+            color: #1d4ed8 !important;
+        }
+
+        html[data-theme="light"] .text-blue-400 {
+            color: #1e40af !important;
+        }
+
+        html[data-theme="light"] .text-green-300 {
+            color: #15803d !important;
+        }
+
+        html[data-theme="light"] .text-green-400 {
+            color: #166534 !important;
+        }
+
+        html[data-theme="light"] .text-yellow-300 {
+            color: #a16207 !important;
+        }
+
+        html[data-theme="light"] .text-yellow-400 {
+            color: #854d0e !important;
+        }
+
+        html[data-theme="light"] .text-red-300 {
+            color: #b91c1c !important;
+        }
+
+        html[data-theme="light"] .text-red-400 {
+            color: #991b1b !important;
+        }
+
+        html[data-theme="light"] .text-purple-400 {
+            color: #7e22ce !important;
+        }
+
+        html[data-theme="light"] .text-pink-400 {
+            color: #be185d !important;
+        }
+
+        /* ボーダー色 */
+        html[data-theme="light"] .border-gray-800 {
+            border-color: #f1f5f9 !important;
+        }
+
+        html[data-theme="light"] .border-gray-700 {
+            border-color: #e2e8f0 !important;
+        }
+
+        html[data-theme="light"] .border-gray-600 {
+            border-color: #cbd5e1 !important;
+        }
+
+        html[data-theme="light"] .border-gray-500 {
+            border-color: #94a3b8 !important;
+        }
+
+        html[data-theme="light"] .border-gray-400 {
+            border-color: #64748b !important;
+        }
+
+        /* ホバー時ボーダー色 */
+        html[data-theme="light"] .hover\:border-gray-700:hover {
+            border-color: #e2e8f0 !important;
+        }
+
+        html[data-theme="light"] .hover\:border-gray-600:hover {
+            border-color: #cbd5e1 !important;
+        }
+
+        html[data-theme="light"] .hover\:border-gray-400:hover {
+            border-color: #64748b !important;
+        }
+
+        html[data-theme="light"] .hover\:border-blue-500:hover {
+            border-color: #2563eb !important;
+        }
+
+        html[data-theme="light"] .hover\:border-red-700:hover {
+            border-color: #b91c1c !important;
+        }
+
+        /* フォーカス時の背景色 */
+        html[data-theme="light"] .focus\:bg-gray-900\/50:focus {
+            background-color: rgba(248, 250, 252, 0.5) !important;
+        }
+
+        html[data-theme="light"] .focus\:bg-gray-900:focus {
+            background-color: rgba(248, 250, 252, 1) !important;
+        }
+
+        /* プロットモード用の特有な要素の上書き */
+        html[data-theme="light"] .panel-row:nth-child(even) {
+            background-color: #f1f5f9 !important;
+        }
+
+        html[data-theme="light"] .panel-row:hover {
+            background-color: #e2e8f0 !important;
+        }
+
+        html[data-theme="light"] .panel-input {
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .panel-input:focus {
+            background-color: #ffffff !important;
+            color: #111827 !important;
+        }
+
+        html[data-theme="light"] .panel-input::placeholder {
+            color: #94a3b8 !important;
+        }
+
+        /* ------------------------------------- */
+        /* ボタン類の見栄え改善 (ライトモード専用) */
+        /* ------------------------------------- */
+
+        /* 青系ボタン (より明るく爽やかな青に、文字色は白) */
+        html[data-theme="light"] button.bg-blue-700,
+        html[data-theme="light"] button.bg-blue-600,
+        html[data-theme="light"] .bg-blue-700.text-white,
+        html[data-theme="light"] .bg-blue-600.text-white {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            border-color: #3b82f6 !important;
+        }
+
+        html[data-theme="light"] button.hover\:bg-blue-600:hover,
+        html[data-theme="light"] button.hover\:bg-blue-500:hover {
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            border-color: #2563eb !important;
+        }
+
+        /* 緑系ボタン (保存など) */
+        html[data-theme="light"] button.bg-green-700,
+        html[data-theme="light"] button.bg-green-600,
+        html[data-theme="light"] .bg-green-700.text-white,
+        html[data-theme="light"] .bg-green-600.text-white {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            border-color: #10b981 !important;
+        }
+
+        html[data-theme="light"] button.hover\:bg-green-600:hover,
+        html[data-theme="light"] button.hover\:bg-green-500:hover {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+            border-color: #059669 !important;
+        }
+
+        /* 赤系ボタン (削除など) */
+        html[data-theme="light"] button.bg-red-700,
+        html[data-theme="light"] button.bg-red-600,
+        html[data-theme="light"] .bg-red-700.text-white,
+        html[data-theme="light"] .bg-red-600.text-white {
+            background-color: #ef4444 !important;
+            color: #ffffff !important;
+            border-color: #ef4444 !important;
+        }
+
+        html[data-theme="light"] button.hover\:bg-red-600:hover,
+        html[data-theme="light"] button.hover\:bg-red-500:hover {
+            background-color: #dc2626 !important;
+            color: #ffffff !important;
+            border-color: #dc2626 !important;
+        }
+
+        /* グレー系ボタン (ヘッダーやツールバー・モーダル：ライトモードらしいクリーンな白ボタン風に) */
+        html[data-theme="light"] button.bg-gray-800,
+        html[data-theme="light"] button.bg-gray-700,
+        html[data-theme="light"] button.bg-gray-600 {
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #475569 !important;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+        }
+
+        html[data-theme="light"] button.bg-gray-800:hover,
+        html[data-theme="light"] button.bg-gray-700:hover,
+        html[data-theme="light"] button.bg-gray-600:hover,
+        html[data-theme="light"] button.hover\:bg-gray-600:hover,
+        html[data-theme="light"] button.hover\:bg-gray-500:hover {
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+            border-color: #94a3b8 !important;
+        }
+
+        /* アイコンのみの透過ボタン (hover:bg-gray-700) に対する調整 */
+        html[data-theme="light"] button.hover\:bg-gray-700:hover {
+            background-color: #e2e8f0 !important;
+            color: #0f172a !important;
         }

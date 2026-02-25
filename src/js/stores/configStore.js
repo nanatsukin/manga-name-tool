@@ -18,7 +18,8 @@ window.MangaApp.stores.useConfigStore = Pinia.defineStore('config', () => {
         safeInside: 472, safeOutside: 472,   // ノド・小口の安全マージン
         scale: 0.12,                         // 画面表示倍率（実寸 × scale = 表示px）
         fontFamily: '"HiraMinProN-W3", "Yu Mincho", "MS PMincho", "Hiragino Mincho ProN", serif',
-        defaultFontSize: 18
+        defaultFontSize: 18,
+        theme: 'dark'                        // 'dark' | 'light'
     });
 
     /** 使用可能なフォントの選択肢（UI のセレクトボックス用）。 */

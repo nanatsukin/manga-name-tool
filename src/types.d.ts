@@ -82,6 +82,7 @@ interface PageConfig {
     scale: number;
     fontFamily: string;
     defaultFontSize: number;
+    theme?: string;
 }
 
 /** エクスポート設定 */

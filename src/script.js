@@ -235,6 +235,12 @@ const app = createApp({
             });
         });
 
+        // テーマ変更時に html[data-theme] 属性を更新する（初回は即時適用）
+        document.documentElement.setAttribute('data-theme', configStore.pageConfig.theme || 'dark');
+        watch(() => configStore.pageConfig.theme, (/** @type {string|undefined} */ newTheme) => {
+            document.documentElement.setAttribute('data-theme', newTheme || 'dark');
+        });
+
         // モード切替時に Observer を再登録する。
         // 各モードパネルは v-if で制御されるため、モード変更で DOM が完全に再生成される。
         // 古い Observer は破棄された要素を監視しているため、新しい要素を observe し直す必要がある。
