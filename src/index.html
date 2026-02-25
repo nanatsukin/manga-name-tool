@@ -5,19 +5,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ネーム製作ツール</title>
-    <style>[v-cloak] { display: none !important; }</style>
+    <style>
+        [v-cloak] {
+            display: none !important;
+        }
+    </style>
 
     <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.js"></script>
     <script>
-    Vue.isVue2 = false;
-    Vue.isVue3 = true;
-    Vue.install = function(){};
-    Vue.Vue = Vue;
-    Vue.Vue2 = undefined;
-    window.VueDemi = Vue;
+        Vue.isVue2 = false;
+        Vue.isVue3 = true;
+        Vue.install = function () { };
+        Vue.Vue = Vue;
+        Vue.Vue2 = undefined;
+        window.VueDemi = Vue;
     </script>
     <script src="https://unpkg.com/pinia@2.1.7/dist/pinia.iife.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        /* Zinc系グレーパレット */
+                        gray: {
+                            100: '#f4f4f5',
+                            200: '#e4e4e7',
+                            300: '#d4d4d8',
+                            400: '#a1a1aa',
+                            500: '#71717a',
+                            600: '#52525b',
+                            700: '#3f3f46',
+                            750: '#2d2d33',
+                            800: '#27272a',
+                            900: '#18181b',
+                        },
+                        /* Indigo系アクセント */
+                        blue: {
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.js"></script>
     <script src="https://unpkg.com/ag-psd/dist/bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -164,7 +206,7 @@
             </div>
         </div>
 
-        <header class="bg-gray-800 border-b border-gray-700 flex flex-col z-50 shrink-0 relative">
+        <header class="bg-gray-900/80 backdrop-blur-md border-b border-gray-800 flex flex-col z-50 shrink-0 relative">
 
             <!-- Layer A: システム・管理 -->
             <div class="grid grid-cols-3 items-center h-10 px-2 w-full">
@@ -198,7 +240,8 @@
                             出力・連携 <i class="fas fa-chevron-down text-[9px]"></i>
                         </button>
                         <div v-if="showOutputMenu" @click="showOutputMenu = false" class="fixed inset-0 z-40"></div>
-                        <div v-show="showOutputMenu" class="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 min-w-[180px] py-1">
+                        <div v-show="showOutputMenu"
+                            class="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 min-w-[180px] py-1">
                             <button @click="openExportModal(); showOutputMenu = false"
                                 class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2 transition">
                                 <i class="fas fa-file-image text-gray-400 w-4"></i> 画像(PNG/JPG)出力
@@ -227,9 +270,9 @@
                         <i class="fas fa-folder-open"></i>
                     </button>
 
-                    <!-- 保存 (アイコンのみ, Primary) -->
+                    <!-- 保存 (アイコンのみ) -->
                     <button @click="saveProject" :title="currentFileHandle ? '上書き保存' : '保存'"
-                        class="bg-green-700 hover:bg-green-600 text-white p-1.5 rounded transition">
+                        class="text-gray-400 hover:text-white hover:bg-gray-700 p-1.5 rounded transition">
                         <i class="fas" :class="currentFileHandle ? 'fa-save' : 'fa-file-export'"></i>
                     </button>
 
@@ -248,7 +291,8 @@
             </div>
 
             <!-- Layer B: 工程ツールバー (デスクトップのみ) -->
-            <div class="relative hidden md:flex items-center h-8 px-2 gap-2 border-t border-gray-700 bg-gray-800">
+            <div
+                class="relative hidden md:flex items-center h-8 px-2 gap-2 border-t border-gray-800 bg-gray-900/60 backdrop-blur-sm">
                 <!-- プロットモード -->
                 <template v-if="currentMode === 'plot'">
                     <div class="ml-auto">
@@ -299,9 +343,9 @@
                 </template>
             </div>
 
-            <!-- モバイルメニュー -->
+            <!-- モバイルMenu -->
             <div v-if="isMenuOpen"
-                class="md:hidden absolute top-10 left-0 w-full bg-gray-800 border-b border-gray-600 shadow-xl flex flex-col p-2 space-y-2 z-50">
+                class="md:hidden absolute top-10 left-0 w-full bg-gray-900/95 backdrop-blur-lg border-b border-gray-800 shadow-2xl flex flex-col p-2 space-y-2 z-50">
 
                 <div class="grid grid-cols-3 gap-2 p-1 bg-gray-900 rounded">
                     <button @click="changeMode('plot'); isMenuOpen=false"
@@ -331,11 +375,14 @@
                     <button @click="showSettings = true; isMenuOpen=false"
                         class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-cog"></i> 設定</button>
                     <button @click="openExportModal(); isMenuOpen=false"
-                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-image"></i> 画像出力</button>
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-image"></i>
+                        画像出力</button>
                     <button @click="showTextModal = true; isMenuOpen=false"
-                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-clipboard"></i> セリフ出力</button>
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-clipboard"></i>
+                        セリフ出力</button>
                     <button @click="copyAllPlots(); isMenuOpen=false"
-                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-alt"></i> プロット全コピー</button>
+                        class="bg-gray-700 text-white py-1.5 rounded text-xs"><i class="fas fa-file-alt"></i>
+                        プロット全コピー</button>
                 </div>
 
                 <button v-if="currentMode === 'name'" @click="addNoteToCurrentPage(); isMenuOpen=false"
@@ -402,26 +449,32 @@
                         </div>
 
                         <div>
-                            <h3 class="font-bold text-gray-400 mb-2 text-xs border-l-4 border-yellow-500 pl-2">フォント設定</h3>
+                            <h3 class="font-bold text-gray-400 mb-2 text-xs border-l-4 border-yellow-500 pl-2">フォント設定
+                            </h3>
                             <div class="space-y-3">
                                 <div>
                                     <label class="block text-xs mb-1">フォントファミリー</label>
-                                    <select v-model="pageConfig.fontFamily" class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm">
-                                        <option v-for="opt in fontOptions" :key="opt.label" :value="opt.value">{{ opt.label }}</option>
+                                    <select v-model="pageConfig.fontFamily"
+                                        class="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm">
+                                        <option v-for="opt in fontOptions" :key="opt.label" :value="opt.value">{{
+                                            opt.label }}</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs mb-1">基本フォントサイズ (px)</label>
                                     <div class="flex gap-2 items-center">
-                                        <input type="number" v-model.number="pageConfig.defaultFontSize" class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm">
-                                        <button @click="applyFontSizeToAll" class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded border border-gray-600 transition">全セリフに適用</button>
+                                        <input type="number" v-model.number="pageConfig.defaultFontSize"
+                                            class="w-20 bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm">
+                                        <button @click="applyFontSizeToAll"
+                                            class="bg-gray-700 hover:bg-gray-600 text-white text-xs px-3 py-1.5 rounded border border-gray-600 transition">全セリフに適用</button>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="border-t border-gray-700 pt-4">
-                            <h3 class="font-bold text-gray-400 mb-3 text-xs border-l-4 border-purple-500 pl-2">表示テーマ</h3>
+                            <h3 class="font-bold text-gray-400 mb-3 text-xs border-l-4 border-purple-500 pl-2">表示テーマ
+                            </h3>
                             <div class="flex gap-2">
                                 <button @click="pageConfig.theme = 'dark'"
                                     class="flex-1 py-2 rounded text-xs font-bold transition border flex items-center justify-center gap-1.5"
@@ -461,8 +514,7 @@
             <div v-if="currentMode === 'plot'" class="h-full overflow-y-auto pb-20">
                 <div class="max-w-6xl mx-auto p-0 md:p-4">
 
-                    <div v-for="(page, pIndex) in pages" :key="page.id" class="mb-6"
-                        :data-plot-page-idx="pIndex">
+                    <div v-for="(page, pIndex) in pages" :key="page.id" class="mb-6" :data-plot-page-idx="pIndex">
                         <div
                             class="bg-gray-700 px-3 py-1 flex justify-between items-center sticky top-0 z-20 border-b border-gray-600 rounded-t shadow-md">
                             <div class="font-bold text-sm text-white flex items-center gap-2"><i
@@ -479,139 +531,141 @@
                             </div>
                         </div>
                         <template v-if="visiblePlotPageIndices.has(pIndex)">
-                        <div class="bg-gray-800 rounded-b overflow-hidden min-h-[40px]"
-                            @dragover.prevent="dragOverPage(pIndex)" @drop.prevent="dropOnPage(pIndex)">
-                            <div v-if="page.scripts.length === 0"
-                                class="text-center text-xs text-gray-600 py-2 border-b border-gray-700">(セリフなし)</div>
-                            <div v-for="(script, idx) in page.scripts" :key="script.id" draggable="true"
-                                @dragstart="dragStart(pIndex, idx)" @dragover.prevent="dragOverScript(pIndex, idx)"
-                                @drop.stop="dropOnScript(pIndex, idx)" @dragend="dragEnd"
-                                :class="{'drop-target-active': isDropTarget(pIndex, idx), 'dragging-ghost': isDragging(pIndex, idx)}"
-                                class="panel-row group relative flex flex-col md:flex-row border-b border-gray-700">
-
-                                <div
-                                    class="flex items-center w-full md:w-auto border-b md:border-b-0 md:border-r border-gray-700 bg-gray-800/80 md:bg-gray-800/30">
-                                    <div
-                                        class="w-8 flex-none flex items-center justify-center cursor-move text-gray-500 hover:text-blue-400">
-                                        <i class="fas fa-grip-lines text-xs"></i>
-                                        <span class="text-[9px] font-bold ml-0.5 opacity-50">{{ idx + 1 }}</span>
-                                    </div>
+                            <div class="bg-gray-800 rounded-b overflow-hidden min-h-[40px]"
+                                @dragover.prevent="dragOverPage(pIndex)" @drop.prevent="dropOnPage(pIndex)">
+                                <div v-if="page.scripts.length === 0"
+                                    class="text-center text-xs text-gray-600 py-2 border-b border-gray-700">(セリフなし)
+                                </div>
+                                <div v-for="(script, idx) in page.scripts" :key="script.id" draggable="true"
+                                    @dragstart="dragStart(pIndex, idx)" @dragover.prevent="dragOverScript(pIndex, idx)"
+                                    @drop.stop="dropOnScript(pIndex, idx)" @dragend="dragEnd"
+                                    :class="{'drop-target-active': isDropTarget(pIndex, idx), 'dragging-ghost': isDragging(pIndex, idx)}"
+                                    class="panel-row group relative flex flex-col md:flex-row border-b border-gray-700">
 
                                     <div
-                                        class="w-24 md:w-28 flex-none border-r border-gray-700 flex items-center h-full">
-                                        <input v-if="script.type !== 'note'" v-model="script.char"
-                                            list="char-name-suggestions" placeholder="名前"
-                                            class="panel-input w-full text-xs font-bold text-blue-200 px-2 py-2 bg-transparent"
-                                            :ref="el => setInputRef(el, pIndex, idx, 'char')"
-                                            @keydown.enter.prevent="focusText(pIndex, idx)">
-                                        <div v-else
-                                            class="w-full text-xs text-red-400 px-2 font-bold flex items-center h-full bg-red-900/10">
-                                            注意書き</div>
-                                    </div>
-
-                                    <div class="w-14 md:w-12 flex-none flex items-center justify-center border-r border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors h-full"
-                                        @click="toggleScriptType(pIndex, idx)"
-                                        :class="script.type === 'note' ? 'bg-red-900/20' : (script.char ? 'bg-blue-900/20' : 'bg-green-900/20')">
-                                        <span class="text-[10px] font-bold"
-                                            :class="script.type === 'note' ? 'text-red-400' : (script.char ? 'text-blue-300' : 'text-green-400')">
-                                            {{ script.type === 'note' ? '注意' : (script.char ? '台詞' : 'ト書き') }}
-                                        </span>
-                                    </div>
-
-                                    <div class="flex md:hidden flex-1 justify-end items-stretch h-full">
-                                        <div class="flex flex-col w-8 border-l border-gray-700">
-                                            <button @click="moveScript(pIndex, idx, -1)"
-                                                class="flex-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
-                                                :disabled="idx===0" :class="{'opacity-30': idx===0}">
-                                                <i class="fas fa-chevron-up text-[10px]"></i>
-                                            </button>
-                                            <button @click="moveScript(pIndex, idx, 1)"
-                                                class="flex-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors border-t border-gray-700 flex items-center justify-center"
-                                                :disabled="idx===page.scripts.length-1"
-                                                :class="{'opacity-30': idx===page.scripts.length-1}">
-                                                <i class="fas fa-chevron-down text-[10px]"></i>
-                                            </button>
+                                        class="flex items-center w-full md:w-auto border-b md:border-b-0 md:border-r border-gray-700 bg-gray-800/80 md:bg-gray-800/30">
+                                        <div
+                                            class="w-8 flex-none flex items-center justify-center cursor-move text-gray-500 hover:text-blue-400">
+                                            <i class="fas fa-grip-lines text-xs"></i>
+                                            <span class="text-[9px] font-bold ml-0.5 opacity-50">{{ idx + 1 }}</span>
                                         </div>
 
-                                        <button @click="insertScriptAfter(pIndex, idx)"
-                                            class="w-10 text-gray-400 hover:text-green-400 hover:bg-green-900/20 border-l border-gray-700 transition-colors"
-                                            title="下に一行追加">
-                                            <i class="fas fa-plus text-xs"></i>
-                                        </button>
+                                        <div
+                                            class="w-24 md:w-28 flex-none border-r border-gray-700 flex items-center h-full">
+                                            <input v-if="script.type !== 'note'" v-model="script.char"
+                                                list="char-name-suggestions" placeholder="名前"
+                                                class="panel-input w-full text-xs font-bold text-blue-200 px-2 py-2 bg-transparent"
+                                                :ref="el => setInputRef(el, pIndex, idx, 'char')"
+                                                @keydown.enter.prevent="focusText(pIndex, idx)">
+                                            <div v-else
+                                                class="w-full text-xs text-red-400 px-2 font-bold flex items-center h-full bg-red-900/10">
+                                                注意書き</div>
+                                        </div>
 
-                                        <button @click="splitScriptFromButton(pIndex, idx)"
-                                            class="w-10 text-gray-400 hover:text-yellow-400 hover:bg-yellow-900/20 border-l border-gray-700 transition-colors"
-                                            title="ここで分割">
-                                            <i class="fas fa-scissors text-xs"></i>
-                                        </button>
+                                        <div class="w-14 md:w-12 flex-none flex items-center justify-center border-r border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors h-full"
+                                            @click="toggleScriptType(pIndex, idx)"
+                                            :class="script.type === 'note' ? 'bg-red-900/20' : (script.char ? 'bg-blue-900/20' : 'bg-green-900/20')">
+                                            <span class="text-[10px] font-bold"
+                                                :class="script.type === 'note' ? 'text-red-400' : (script.char ? 'text-blue-300' : 'text-green-400')">
+                                                {{ script.type === 'note' ? '注意' : (script.char ? '台詞' : 'ト書き') }}
+                                            </span>
+                                        </div>
 
+                                        <div class="flex md:hidden flex-1 justify-end items-stretch h-full">
+                                            <div class="flex flex-col w-8 border-l border-gray-700">
+                                                <button @click="moveScript(pIndex, idx, -1)"
+                                                    class="flex-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors flex items-center justify-center"
+                                                    :disabled="idx===0" :class="{'opacity-30': idx===0}">
+                                                    <i class="fas fa-chevron-up text-[10px]"></i>
+                                                </button>
+                                                <button @click="moveScript(pIndex, idx, 1)"
+                                                    class="flex-1 text-gray-400 hover:text-white hover:bg-gray-700 transition-colors border-t border-gray-700 flex items-center justify-center"
+                                                    :disabled="idx===page.scripts.length-1"
+                                                    :class="{'opacity-30': idx===page.scripts.length-1}">
+                                                    <i class="fas fa-chevron-down text-[10px]"></i>
+                                                </button>
+                                            </div>
+
+                                            <button @click="insertScriptAfter(pIndex, idx)"
+                                                class="w-10 text-gray-400 hover:text-green-400 hover:bg-green-900/20 border-l border-gray-700 transition-colors"
+                                                title="下に一行追加">
+                                                <i class="fas fa-plus text-xs"></i>
+                                            </button>
+
+                                            <button @click="splitScriptFromButton(pIndex, idx)"
+                                                class="w-10 text-gray-400 hover:text-yellow-400 hover:bg-yellow-900/20 border-l border-gray-700 transition-colors"
+                                                title="ここで分割">
+                                                <i class="fas fa-scissors text-xs"></i>
+                                            </button>
+
+                                            <button @click="moveSubsequentScriptsToNewPage(pIndex, idx)"
+                                                class="w-10 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 border-l border-gray-700 transition-colors"
+                                                title="次ページへ">
+                                                <i class="fas fa-file-export text-xs"></i>
+                                            </button>
+
+                                            <button @click="jumpToConte(pIndex, script)"
+                                                class="w-10 text-gray-400 hover:text-purple-400 hover:bg-purple-900/20 border-l border-gray-700 transition-colors"
+                                                title="コンテの該当箇所へ">
+                                                <i class="fas fa-layer-group text-xs"></i>
+                                            </button>
+                                            <button @click="jumpToName(pIndex, script)"
+                                                class="w-10 text-gray-400 hover:text-pink-400 hover:bg-pink-900/20 border-l border-gray-700 transition-colors"
+                                                title="ネームの該当箇所へ">
+                                                <i class="fas fa-book-open text-xs"></i>
+                                            </button>
+
+                                            <button @click="removeScript(pIndex, idx)"
+                                                class="w-10 text-red-900/60 hover:text-red-400 hover:bg-red-900/20 border-l border-gray-700 transition-colors">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="flex-1 min-w-0 relative flex flex-col justify-center bg-transparent min-h-0">
+                                        <textarea v-model="script.text" rows="1" placeholder="内容..."
+                                            class="panel-input w-full text-sm leading-relaxed py-3 px-4 focus:bg-gray-900/50 transition-colors resize-none overflow-hidden block"
+                                            :class="{'text-red-300': script.type === 'note'}"
+                                            :ref="el => setInputRef(el, pIndex, idx, 'text')" @input="adjustHeight"
+                                            @keydown="handleScriptTextKeydown($event, pIndex, idx)"></textarea>
+                                    </div>
+
+                                    <div
+                                        class="hidden md:flex w-48 flex-none items-stretch border-l border-gray-700 bg-gray-800/10">
                                         <button @click="moveSubsequentScriptsToNewPage(pIndex, idx)"
-                                            class="w-10 text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 border-l border-gray-700 transition-colors"
-                                            title="次ページへ">
+                                            class="flex-1 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 transition-colors border-r border-gray-700"
+                                            title="これ以降を新ページへ">
                                             <i class="fas fa-file-export text-xs"></i>
                                         </button>
-
                                         <button @click="jumpToConte(pIndex, script)"
-                                            class="w-10 text-gray-400 hover:text-purple-400 hover:bg-purple-900/20 border-l border-gray-700 transition-colors"
-                                            title="コンテの該当箇所へ">
+                                            class="flex-1 text-gray-500 hover:text-purple-400 hover:bg-purple-900/20 transition-colors border-r border-gray-700"
+                                            title="コンテへ移動">
                                             <i class="fas fa-layer-group text-xs"></i>
                                         </button>
                                         <button @click="jumpToName(pIndex, script)"
-                                            class="w-10 text-gray-400 hover:text-pink-400 hover:bg-pink-900/20 border-l border-gray-700 transition-colors"
-                                            title="ネームの該当箇所へ">
+                                            class="flex-1 text-gray-500 hover:text-pink-400 hover:bg-pink-900/20 transition-colors border-r border-gray-700"
+                                            title="ネームへ移動">
                                             <i class="fas fa-book-open text-xs"></i>
                                         </button>
-
+                                        <button @click="splitScriptFromButton(pIndex, idx)"
+                                            class="flex-1 text-gray-500 hover:text-yellow-500 hover:bg-yellow-900/20 transition-colors border-r border-gray-700"
+                                            title="カーソル位置で分割">
+                                            <i class="fas fa-scissors text-xs"></i>
+                                        </button>
                                         <button @click="removeScript(pIndex, idx)"
-                                            class="w-10 text-red-900/60 hover:text-red-400 hover:bg-red-900/20 border-l border-gray-700 transition-colors">
-                                            <i class="fas fa-times"></i>
+                                            class="flex-1 text-gray-500 hover:text-red-500 hover:bg-red-900/20 transition-colors"
+                                            title="削除">
+                                            <i class="fas fa-trash-alt text-xs"></i>
                                         </button>
                                     </div>
                                 </div>
-
-                                <div
-                                    class="flex-1 min-w-0 relative flex flex-col justify-center bg-transparent min-h-0">
-                                    <textarea v-model="script.text" rows="1" placeholder="内容..."
-                                        class="panel-input w-full text-sm leading-relaxed py-3 px-4 focus:bg-gray-900/50 transition-colors resize-none overflow-hidden block"
-                                        :class="{'text-red-300': script.type === 'note'}"
-                                        :ref="el => setInputRef(el, pIndex, idx, 'text')" @input="adjustHeight"
-                                        @keydown="handleScriptTextKeydown($event, pIndex, idx)"></textarea>
-                                </div>
-
-                                <div
-                                    class="hidden md:flex w-48 flex-none items-stretch border-l border-gray-700 bg-gray-800/10">
-                                    <button @click="moveSubsequentScriptsToNewPage(pIndex, idx)"
-                                        class="flex-1 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 transition-colors border-r border-gray-700"
-                                        title="これ以降を新ページへ">
-                                        <i class="fas fa-file-export text-xs"></i>
-                                    </button>
-                                    <button @click="jumpToConte(pIndex, script)"
-                                        class="flex-1 text-gray-500 hover:text-purple-400 hover:bg-purple-900/20 transition-colors border-r border-gray-700"
-                                        title="コンテへ移動">
-                                        <i class="fas fa-layer-group text-xs"></i>
-                                    </button>
-                                    <button @click="jumpToName(pIndex, script)"
-                                        class="flex-1 text-gray-500 hover:text-pink-400 hover:bg-pink-900/20 transition-colors border-r border-gray-700"
-                                        title="ネームへ移動">
-                                        <i class="fas fa-book-open text-xs"></i>
-                                    </button>
-                                    <button @click="splitScriptFromButton(pIndex, idx)"
-                                        class="flex-1 text-gray-500 hover:text-yellow-500 hover:bg-yellow-900/20 transition-colors border-r border-gray-700"
-                                        title="カーソル位置で分割">
-                                        <i class="fas fa-scissors text-xs"></i>
-                                    </button>
-                                    <button @click="removeScript(pIndex, idx)"
-                                        class="flex-1 text-gray-500 hover:text-red-500 hover:bg-red-900/20 transition-colors"
-                                        title="削除">
-                                        <i class="fas fa-trash-alt text-xs"></i>
-                                    </button>
-                                </div>
                             </div>
-                        </div>
                         </template>
                         <template v-else>
                             <!-- ビューポート外のページ: スクロールで表示される軽量 placeholder -->
-                            <div class="bg-gray-800 rounded-b min-h-[40px] flex items-center px-3 py-2 text-xs text-gray-600">
+                            <div
+                                class="bg-gray-800 rounded-b min-h-[40px] flex items-center px-3 py-2 text-xs text-gray-600">
                                 スクロールで表示 — {{ page.scripts.length }} 件のセリフ
                             </div>
                         </template>
@@ -643,14 +697,13 @@
                                 :draggable="isDrawingDragReady" @dragstart="dragStartDrawing($event, dIdx)"
                                 @dragend="dragEndDrawing" @dragover.prevent="dragOverDrawing(dIdx)"
                                 @drop.stop="dropOnDrawing(dIdx)" :id="'conte-drawing-' + drawing.id"
-                                class="conte-card bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-600 flex flex-row transition-transform duration-200"
+                                class="conte-card bg-gray-900/80 rounded-xl shadow-2xl overflow-hidden border border-gray-800 flex flex-row transition-transform duration-200"
                                 :class="{'drawing-dragging': draggingDrawingIndex === dIdx, 'drawing-drop-target': dropTargetDrawingIndex === dIdx}">
 
                                 <div class="conte-card-image flex flex-col shrink-0 border-r border-gray-700">
                                     <div class="conte-card-preview relative bg-white group cursor-pointer"
                                         style="width: 360px; height: 240px;" @click="openDrawingModal(drawing)">
-                                        <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
-                                            loading="lazy"
+                                        <img v-if="drawing.imgSrc" :src="drawing.imgSrc" loading="lazy"
                                             class="preview-image w-full h-full object-contain pointer-events-none">
                                         <div v-else class="w-full h-full bg-white"></div>
 
@@ -724,8 +777,8 @@
                         </div>
 
                         <div class="p-3 space-y-3 flex-1 pb-10">
-                            <div v-for="script in (activePageScriptsByDrawingId['__unassigned__'] || [])" :key="script.id"
-                                draggable="true" @dragstart="dragStartConteScript($event, script)"
+                            <div v-for="script in (activePageScriptsByDrawingId['__unassigned__'] || [])"
+                                :key="script.id" draggable="true" @dragstart="dragStartConteScript($event, script)"
                                 @dragend="dragEndConteScript" @drop.stop="dropOnConteScript(script)" @dragover.prevent
                                 @dblclick.stop="jumpToPlot(activePageIndex, script)" title="ダブルクリックでプロットへ移動"
                                 class="p-2 rounded text-sm border-l-4 cursor-move hover:bg-gray-800 transition shadow-sm border border-gray-700 hover:brightness-110"
@@ -748,14 +801,13 @@
                 </div>
             </div>
 
-            <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-600 p-8"
+            <div v-if="currentMode === 'name'" ref="nameModeContainer" class="h-full overflow-y-auto bg-gray-900 p-8"
                 @mousedown="selectItem(null)">
 
 
                 <div class="flex flex-col origin-top pb-20">
                     <div v-for="(spread, sIdx) in spreads" :key="sIdx"
-                        class="flex items-start justify-center gap-4 name-spread-row"
-                        :data-spread-idx="sIdx"
+                        class="flex items-start justify-center gap-4 name-spread-row" :data-spread-idx="sIdx"
                         :style="{ minHeight: pageStyle.height }">
                         <!-- 左スロット（2ページ見開きの偶数ページ＝左ページの場合はインスペクタ、それ以外はスペーサー） -->
                         <div class="w-40 flex-shrink-0 self-start">
@@ -776,125 +828,127 @@
                         </div>
                         <!-- ページ群 -->
                         <div class="spread-container">
-                        <template v-if="visibleSpreadIndices.has(sIdx)">
-                        <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
-                            :id="'render-page-' + page.pageIndex" :style="pageStyle"
-                            :class="{'hide-for-text-layer': isTextLayerMode, 'hide-guides': isHideGuideMode, 'hide-drawings': isHideDrawingMode, 'force-transparent': isTransparentMode, 'active-name-page': page.pageIndex === activePageIndex}"
-                            @mousedown.stop="selectItem(null); setActivePage(page.pageIndex)">
+                            <template v-if="visibleSpreadIndices.has(sIdx)">
+                                <div v-for="page in spread" :key="page.id" class="manga-page group relative select-none"
+                                    :id="'render-page-' + page.pageIndex" :style="pageStyle"
+                                    :class="{'hide-for-text-layer': isTextLayerMode, 'hide-guides': isHideGuideMode, 'hide-drawings': isHideDrawingMode, 'force-transparent': isTransparentMode, 'active-name-page': page.pageIndex === activePageIndex}"
+                                    @mousedown.stop="selectItem(null); setActivePage(page.pageIndex)">
 
-                            <svg class="guide-layer no-export" :style="{width: '100%', height: '100%'}">
-                                <rect class="guide-rect" :x="guideProps(page.pageIndex).safeX"
-                                    :y="guideProps(page.pageIndex).safeY" :width="guideProps(page.pageIndex).safeW"
-                                    :height="guideProps(page.pageIndex).safeH" />
-                                <rect class="guide-rect" :x="guideProps(page.pageIndex).finishX"
-                                    :y="guideProps(page.pageIndex).finishY" :width="guideProps(page.pageIndex).finishW"
-                                    :height="guideProps(page.pageIndex).finishH" />
-                                <rect class="guide-rect" :x="guideProps(page.pageIndex).bleedX"
-                                    :y="guideProps(page.pageIndex).bleedY" :width="guideProps(page.pageIndex).bleedW"
-                                    :height="guideProps(page.pageIndex).bleedH" />
-                                <path class="guide-path" :d="guideProps(page.pageIndex).tonboPath" />
-                                <path class="guide-path" :d="guideProps(page.pageIndex).centerPath" />
-                            </svg>
-                            <div
-                                class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 pointer-events-none select-none font-serif no-export">
-                                - {{ page.pageIndex + 1 }} -</div>
+                                    <svg class="guide-layer no-export" :style="{width: '100%', height: '100%'}">
+                                        <rect class="guide-rect" :x="guideProps(page.pageIndex).safeX"
+                                            :y="guideProps(page.pageIndex).safeY"
+                                            :width="guideProps(page.pageIndex).safeW"
+                                            :height="guideProps(page.pageIndex).safeH" />
+                                        <rect class="guide-rect" :x="guideProps(page.pageIndex).finishX"
+                                            :y="guideProps(page.pageIndex).finishY"
+                                            :width="guideProps(page.pageIndex).finishW"
+                                            :height="guideProps(page.pageIndex).finishH" />
+                                        <rect class="guide-rect" :x="guideProps(page.pageIndex).bleedX"
+                                            :y="guideProps(page.pageIndex).bleedY"
+                                            :width="guideProps(page.pageIndex).bleedW"
+                                            :height="guideProps(page.pageIndex).bleedH" />
+                                        <path class="guide-path" :d="guideProps(page.pageIndex).tonboPath" />
+                                        <path class="guide-path" :d="guideProps(page.pageIndex).centerPath" />
+                                    </svg>
+                                    <div
+                                        class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-gray-400 pointer-events-none select-none font-serif no-export">
+                                        - {{ page.pageIndex + 1 }} -</div>
 
-                            <div v-for="(drawing, dIdx) in page.drawings" :key="drawing.id"
-                                class="absolute border-2 border-black hover:border-blue-500 transition-colors group/drawing"
-                                :class="{'selected-item': selectedItemId === drawing.id && !isImageEditMode, 'image-edit-mode': selectedItemId === drawing.id && isImageEditMode}"
-                                :style="{ left: drawing.layout.x + 'px', top: drawing.layout.y + 'px', width: drawing.layout.w + 'px', height: drawing.layout.h + 'px', zIndex: 1 }"
-                                @mousedown.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
-                                @touchstart.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
-                                @wheel.stop.prevent="onImageWheel($event, drawing)">
-                                <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                                    <img v-if="drawing.imgSrc" :src="drawing.imgSrc"
-                                        loading="lazy"
-                                        class="w-full h-full object-contain select-none opacity-50 grayscale origin-center"
-                                        :style="{ transform: `scale(${drawing.inner?.scale || 1}) translate(${drawing.inner?.x || 0}px, ${drawing.inner?.y || 0}px)` }">
-                                    <div v-else class="w-full h-full bg-gray-100 opacity-20"></div>
-                                </div>
-                                <div v-if="selectedItemId === drawing.id && !isImageEditMode" class="no-export">
-                                    <div class="resize-handle rh-tl"
-                                        @mousedown.stop="startLayoutResize($event, drawing, 'tl')"
-                                        @touchstart.stop="startLayoutResize($event, drawing, 'tl')"></div>
-                                    <div class="resize-handle rh-tr"
-                                        @mousedown.stop="startLayoutResize($event, drawing, 'tr')"
-                                        @touchstart.stop="startLayoutResize($event, drawing, 'tr')"></div>
-                                    <div class="resize-handle rh-bl"
-                                        @mousedown.stop="startLayoutResize($event, drawing, 'bl')"
-                                        @touchstart.stop="startLayoutResize($event, drawing, 'bl')"></div>
-                                    <div class="resize-handle rh-br"
-                                        @mousedown.stop="startLayoutResize($event, drawing, 'br')"
-                                        @touchstart.stop="startLayoutResize($event, drawing, 'br')"></div>
-                                </div>
-                                <div class="absolute top-0 left-0 bg-black text-white text-[10px] w-4 h-4 flex items-center justify-center transition-opacity pointer-events-none z-50 no-export"
-                                    :class="selectedItemId === drawing.id ? 'opacity-100' : 'opacity-0 group-hover/drawing:opacity-100'">
-                                    {{ dIdx+1 }}</div>
+                                    <div v-for="(drawing, dIdx) in page.drawings" :key="drawing.id"
+                                        class="absolute border-2 border-black hover:border-blue-500 transition-colors group/drawing"
+                                        :class="{'selected-item': selectedItemId === drawing.id && !isImageEditMode, 'image-edit-mode': selectedItemId === drawing.id && isImageEditMode}"
+                                        :style="{ left: drawing.layout.x + 'px', top: drawing.layout.y + 'px', width: drawing.layout.w + 'px', height: drawing.layout.h + 'px', zIndex: 1 }"
+                                        @mousedown.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
+                                        @touchstart.stop="selectItem(drawing.id); startLayoutDrag($event, drawing); setActivePage(page.pageIndex)"
+                                        @wheel.stop.prevent="onImageWheel($event, drawing)">
+                                        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                                            <img v-if="drawing.imgSrc" :src="drawing.imgSrc" loading="lazy"
+                                                class="w-full h-full object-contain select-none opacity-50 grayscale origin-center"
+                                                :style="{ transform: `scale(${drawing.inner?.scale || 1}) translate(${drawing.inner?.x || 0}px, ${drawing.inner?.y || 0}px)` }">
+                                            <div v-else class="w-full h-full bg-gray-100 opacity-20"></div>
+                                        </div>
+                                        <div v-if="selectedItemId === drawing.id && !isImageEditMode" class="no-export">
+                                            <div class="resize-handle rh-tl"
+                                                @mousedown.stop="startLayoutResize($event, drawing, 'tl')"
+                                                @touchstart.stop="startLayoutResize($event, drawing, 'tl')"></div>
+                                            <div class="resize-handle rh-tr"
+                                                @mousedown.stop="startLayoutResize($event, drawing, 'tr')"
+                                                @touchstart.stop="startLayoutResize($event, drawing, 'tr')"></div>
+                                            <div class="resize-handle rh-bl"
+                                                @mousedown.stop="startLayoutResize($event, drawing, 'bl')"
+                                                @touchstart.stop="startLayoutResize($event, drawing, 'bl')"></div>
+                                            <div class="resize-handle rh-br"
+                                                @mousedown.stop="startLayoutResize($event, drawing, 'br')"
+                                                @touchstart.stop="startLayoutResize($event, drawing, 'br')"></div>
+                                        </div>
+                                        <div class="absolute top-0 left-0 bg-black text-white text-[10px] w-4 h-4 flex items-center justify-center transition-opacity pointer-events-none z-50 no-export"
+                                            :class="selectedItemId === drawing.id ? 'opacity-100' : 'opacity-0 group-hover/drawing:opacity-100'">
+                                            {{ dIdx+1 }}</div>
 
-                                <div v-if="selectedItemId === drawing.id"
-                                    class="absolute top-1 right-1 flex gap-1 z-50 no-export">
-                                    <button @click.stop="toggleImageEditMode"
-                                        class="w-6 h-6 flex items-center justify-center text-[10px] rounded shadow transition border"
-                                        :class="isImageEditMode ? 'bg-green-600 text-white border-green-400' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'"
-                                        title="画像編集モード (移動/拡大)"><i class="fas fa-image"></i></button>
-                                    <div v-if="isImageEditMode" class="flex gap-1">
-                                        <button @click.stop="zoomImage(drawing, 0.1)"
-                                            class="w-6 h-6 bg-white border border-gray-300 text-gray-700 rounded shadow hover:bg-gray-100 flex items-center justify-center"><i
-                                                class="fas fa-search-plus"></i></button>
-                                        <button @click.stop="zoomImage(drawing, -0.1)"
-                                            class="w-6 h-6 bg-white border border-gray-300 text-gray-700 rounded shadow hover:bg-gray-100 flex items-center justify-center"><i
-                                                class="fas fa-search-minus"></i></button>
+                                        <div v-if="selectedItemId === drawing.id"
+                                            class="absolute top-1 right-1 flex gap-1 z-50 no-export">
+                                            <button @click.stop="toggleImageEditMode"
+                                                class="w-6 h-6 flex items-center justify-center text-[10px] rounded shadow transition border"
+                                                :class="isImageEditMode ? 'bg-green-600 text-white border-green-400' : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'"
+                                                title="画像編集モード (移動/拡大)"><i class="fas fa-image"></i></button>
+                                            <div v-if="isImageEditMode" class="flex gap-1">
+                                                <button @click.stop="zoomImage(drawing, 0.1)"
+                                                    class="w-6 h-6 bg-white border border-gray-300 text-gray-700 rounded shadow hover:bg-gray-100 flex items-center justify-center"><i
+                                                        class="fas fa-search-plus"></i></button>
+                                                <button @click.stop="zoomImage(drawing, -0.1)"
+                                                    class="w-6 h-6 bg-white border border-gray-300 text-gray-700 rounded shadow hover:bg-gray-100 flex items-center justify-center"><i
+                                                        class="fas fa-search-minus"></i></button>
+                                            </div>
+                                            <div class="flex flex-col gap-1 ml-1">
+                                                <button @click.stop="moveDrawingPage(page.pageIndex, dIdx, -1)"
+                                                    class="bg-blue-600 text-white w-6 h-3 flex items-center justify-center text-[8px] rounded-t hover:bg-blue-500 shadow border-b border-blue-700">▲</button>
+                                                <button @click.stop="moveDrawingPage(page.pageIndex, dIdx, 1)"
+                                                    class="bg-blue-600 text-white w-6 h-3 flex items-center justify-center text-[8px] rounded-b hover:bg-blue-500 shadow">▼</button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="flex flex-col gap-1 ml-1">
-                                        <button @click.stop="moveDrawingPage(page.pageIndex, dIdx, -1)"
-                                            class="bg-blue-600 text-white w-6 h-3 flex items-center justify-center text-[8px] rounded-t hover:bg-blue-500 shadow border-b border-blue-700">▲</button>
-                                        <button @click.stop="moveDrawingPage(page.pageIndex, dIdx, 1)"
-                                            class="bg-blue-600 text-white w-6 h-3 flex items-center justify-center text-[8px] rounded-b hover:bg-blue-500 shadow">▼</button>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div v-for="(script, sIdx) in page.scripts" :key="script.id"
-                                class="absolute cursor-move border border-transparent hover:border-yellow-400 p-1 transition-colors group/script"
-                                :id="'name-script-' + script.id"
-                                :class="{'selected-item border-blue-500 bg-yellow-100 bg-opacity-20': selectedItemId === script.id}"
-                                :style="{ left: script.layout.x + 'px', top: script.layout.y + 'px', zIndex: 10 }"
-                                @mousedown.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
-                                @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
-                                @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
+                                    <div v-for="(script, sIdx) in page.scripts" :key="script.id"
+                                        class="absolute cursor-move border border-transparent hover:border-yellow-400 p-1 transition-colors group/script"
+                                        :id="'name-script-' + script.id"
+                                        :class="{'selected-item border-blue-500 bg-yellow-100 bg-opacity-20': selectedItemId === script.id}"
+                                        :style="{ left: script.layout.x + 'px', top: script.layout.y + 'px', zIndex: 10 }"
+                                        @mousedown.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
+                                        @touchstart.stop="selectItem(script.id); startLayoutDrag($event, script); setActivePage(page.pageIndex)"
+                                        @dblclick.stop="jumpToPlot(page.pageIndex, script)" title="ダブルクリックでプロットへ移動">
 
-                                <!-- 注意書きの場合（横書き・赤字） -->
-                                <div v-if="script.type === 'note'"
-                                    class="font-sans select-none pointer-events-none border border-red-500 bg-white/80 text-red-600 px-2 py-1 rounded shadow-sm whitespace-pre-wrap"
-                                    :style="{ fontSize: script.layout.fontSize + 'px', minWidth: '100px' }">
-                                    <i class="fas fa-exclamation-circle mr-1"></i>{{ script.text }}
-                                </div>
+                                        <!-- 注意書きの場合（横書き・赤字） -->
+                                        <div v-if="script.type === 'note'"
+                                            class="font-sans select-none pointer-events-none border border-red-500 bg-white/80 text-red-600 px-2 py-1 rounded shadow-sm whitespace-pre-wrap"
+                                            :style="{ fontSize: script.layout.fontSize + 'px', minWidth: '100px' }">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>{{ script.text }}
+                                        </div>
 
-                                <!-- 通常のセリフ・ト書き（縦書き） -->
-                                <div v-else class="vertical-text font-serif select-none pointer-events-none" :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF',
+                                        <!-- 通常のセリフ・ト書き（縦書き） -->
+                                        <div v-else class="vertical-text font-serif select-none pointer-events-none"
+                                            :style="{ fontSize: script.layout.fontSize + 'px', color: script.char ? '#000' : '#3399FF',
                                          fontFamily: pageConfig.fontFamily }">
-                                    {{ script.char ? script.text : `（${script.text}）` }}
-                                </div>
+                                            {{ script.char ? script.text : `（${script.text}）` }}
+                                        </div>
 
-                                <div v-if="selectedItemId === script.id"
-                                    class="absolute -right-6 top-0 flex flex-col gap-1 z-50 no-export">
-                                    <button @click.stop="moveItemPage(page.pageIndex, 'scripts', sIdx, -1)"
-                                        class="bg-gray-800 text-white w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-blue-500 shadow">▲</button>
-                                    <button @click.stop="moveItemPage(page.pageIndex, 'scripts', sIdx, 1)"
-                                        class="bg-gray-800 text-white w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-blue-500 shadow">▼</button>
+                                        <div v-if="selectedItemId === script.id"
+                                            class="absolute -right-6 top-0 flex flex-col gap-1 z-50 no-export">
+                                            <button @click.stop="moveItemPage(page.pageIndex, 'scripts', sIdx, -1)"
+                                                class="bg-gray-800 text-white w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-blue-500 shadow">▲</button>
+                                            <button @click.stop="moveItemPage(page.pageIndex, 'scripts', sIdx, 1)"
+                                                class="bg-gray-800 text-white w-5 h-5 flex items-center justify-center text-[10px] rounded hover:bg-blue-500 shadow">▼</button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
-                        <div v-if="spread.length === 1 && spread[0].pageIndex !== 0"
-                            class="manga-page hidden pointer-events-none" :style="pageStyle"></div>
-                        </template>
-                        <template v-else>
-                            <!-- ビューポート外の見開き: id を保持しつつ軽量な placeholder を表示 -->
-                            <div v-for="page in spread" :key="page.id"
-                                :id="'render-page-' + page.pageIndex"
-                                class="manga-page" :style="pageStyle">
-                            </div>
-                        </template>
+                                <div v-if="spread.length === 1 && spread[0].pageIndex !== 0"
+                                    class="manga-page hidden pointer-events-none" :style="pageStyle"></div>
+                            </template>
+                            <template v-else>
+                                <!-- ビューポート外の見開き: id を保持しつつ軽量な placeholder を表示 -->
+                                <div v-for="page in spread" :key="page.id" :id="'render-page-' + page.pageIndex"
+                                    class="manga-page" :style="pageStyle">
+                                </div>
+                            </template>
                         </div>
                         <!-- 右スロット（左に表示しない場合のみインスペクタ、それ以外はスペーサー） -->
                         <div class="w-40 flex-shrink-0 self-start">
