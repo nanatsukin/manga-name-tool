@@ -43,6 +43,9 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
     /** ウィンドウ幅が見開き2ページ表示に足りない小画面かどうか。 */
     /** @type {VueRef<boolean>} */
     const isSmallScreen = ref(false);
+    /** プロットモードで「…」メニューが開いているセリフの一意キー（"pIndex-idx" 形式）。 */
+    /** @type {VueRef<string | null>} */
+    const openScriptMenuId = ref(null);
 
     // --- Save / processing ---
     /** 自動保存の現在のステータス。 */
@@ -178,7 +181,7 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
         showSettings, showTextModal, showExportModal, showDrawingModal,
         currentEditingDrawing, modalCanvasRef,
         selectedItemId, copiedPageId,
-        isMenuOpen, showOutputMenu, isSmallScreen,
+        isMenuOpen, showOutputMenu, isSmallScreen, openScriptMenuId,
         saveStatus, saveStatusText, isRestoring, isProcessing, isExporting,
         progress, progressMessage,
         get autoSaveTimer() { return autoSaveTimer; },

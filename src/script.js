@@ -149,7 +149,7 @@ const app = createApp({
 
         // --- Virtual Scroll ---
         // ネームモード: ビューポート外の見開きコンテンツを非レンダリングにして DOM ノード数を削減する。
-        const visibleSpreadIndices = ref(/** @type {Set<number>} */ (new Set()));
+        const visibleSpreadIndices = ref(/** @type {Set<number>} */(new Set()));
         /** @type {IntersectionObserver | null} */
         let _spreadObserver = null;
 
@@ -160,7 +160,7 @@ const app = createApp({
             _spreadObserver = new IntersectionObserver((entries) => {
                 const next = new Set(visibleSpreadIndices.value);
                 entries.forEach(entry => {
-                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.spreadIdx);
+                    const idx = Number(/** @type {HTMLElement} */(entry.target).dataset.spreadIdx);
                     if (entry.isIntersecting) next.add(idx); else next.delete(idx);
                 });
                 visibleSpreadIndices.value = next;
@@ -168,7 +168,7 @@ const app = createApp({
         };
 
         // プロットモード: ビューポート外のページセクションを非レンダリングにしてドラッグ時の再レンダリングを削減する。
-        const visiblePlotPageIndices = ref(/** @type {Set<number>} */ (new Set()));
+        const visiblePlotPageIndices = ref(/** @type {Set<number>} */(new Set()));
         /** @type {IntersectionObserver | null} */
         let _plotObserver = null;
 
@@ -179,7 +179,7 @@ const app = createApp({
             _plotObserver = new IntersectionObserver((entries) => {
                 const next = new Set(visiblePlotPageIndices.value);
                 entries.forEach(entry => {
-                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.plotPageIdx);
+                    const idx = Number(/** @type {HTMLElement} */(entry.target).dataset.plotPageIdx);
                     if (entry.isIntersecting) next.add(idx); else next.delete(idx);
                 });
                 visiblePlotPageIndices.value = next;
@@ -352,6 +352,7 @@ const app = createApp({
             showExportModal: uiRefs.showExportModal,
             isMenuOpen: uiRefs.isMenuOpen,
             showOutputMenu: uiRefs.showOutputMenu,
+            openScriptMenuId: uiRefs.openScriptMenuId,
             fileInput: uiRefs.fileInput,
             nameModeContainer: uiRefs.nameModeContainer,
             progress: uiRefs.progress,
