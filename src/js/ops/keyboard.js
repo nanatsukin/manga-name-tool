@@ -32,8 +32,11 @@ window.MangaApp.createKeyboard = function (deps) {
         if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             // Ctrl+Enter でカーソル位置のセリフを分割する
-            performSplit(pIndex, sIndex, /** @type {HTMLTextAreaElement} */ (e.target));
-            return;
+            const result = performSplit(pIndex, sIndex, /** @type {HTMLTextAreaElement} */(e.target));
+            if (result) {
+                return { action: 'split', originalText: result.originalText };
+            }
+            return null;
         }
 
         if (e.key === 'Backspace') {
@@ -52,12 +55,14 @@ window.MangaApp.createKeyboard = function (deps) {
      * ボタン操作からセリフを分割する。
      * Textarea の現在のカーソル位置を基準に performSplit を呼び出す。
      * @param {number} pIndex @param {number} sIndex
+     * @returns {{ originalText: string } | null}
      */
     const splitScriptFromButton = (pIndex, sIndex) => {
         const el = /** @type {HTMLTextAreaElement} */ (uiStore.scriptInputRefs[`${pIndex}-${sIndex}-text`]);
         if (el) {
-            performSplit(pIndex, sIndex, el);
+            return performSplit(pIndex, sIndex, el);
         }
+        return null;
     };
 
     /**
@@ -68,6 +73,7 @@ window.MangaApp.createKeyboard = function (deps) {
      * @param {number} pIndex
      * @param {number} sIndex
      * @param {HTMLTextAreaElement} textareaElement
+     * @returns {{ originalText: string }}
      */
     const performSplit = (pIndex, sIndex, textareaElement) => {
         const scripts = pageStore.pages[pIndex].scripts;
@@ -105,6 +111,8 @@ window.MangaApp.createKeyboard = function (deps) {
                 nextInput.setSelectionRange(0, 0);
             }
         });
+
+        return { originalText: fullText };
     };
 
     /**

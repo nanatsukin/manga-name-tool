@@ -71,29 +71,33 @@ window.MangaApp.createPageOps = function (deps) {
      * - index > 0 でセリフがある場合は前のページへ結合してから削除する
      * - セリフがない場合は確認なしで即削除する
      * @param {number} idx
+     * @returns {{type: 'delete'|'merge', removedPage: Page, scriptsMovedCount: number} | null}
      */
     const deletePage = (idx) => {
         if (idx === 0) {
             // 先頭ページは結合先がないため、確認後にそのまま削除する
             if (pageStore.pages.length > 1) {
                 if (confirm("最初のページを削除しますか？（セリフはすべて消去されます）")) {
-                    pageStore.pages.splice(idx, 1);
+                    const removedPage = pageStore.pages.splice(idx, 1)[0];
+                    return { type: 'delete', removedPage, scriptsMovedCount: 0 };
                 }
             }
-            return;
+            return null;
         }
         const scriptsToMove = pageStore.pages[idx].scripts;
-        if (scriptsToMove.length > 0) {
+        const scriptsMovedCount = scriptsToMove.length;
+        if (scriptsMovedCount > 0) {
             // セリフが残っている場合は前のページへ結合してから削除する
-            if (!confirm(`ページ ${idx + 1} を削除して、セリフを前のページに結合しますか？`)) return;
+            if (!confirm(`ページ ${idx + 1} を削除して、セリフを前のページに結合しますか？`)) return null;
             pageStore.pages[idx - 1].scripts.push(...scriptsToMove);
         } else {
             // セリフがない場合はそのままページを削除する
-            pageStore.pages.splice(idx, 1);
-            return;
+            const removedPage = pageStore.pages.splice(idx, 1)[0];
+            return { type: 'delete', removedPage, scriptsMovedCount: 0 };
         }
-        pageStore.pages.splice(idx, 1);
+        const removedPage = pageStore.pages.splice(idx, 1)[0];
         nextTick(() => helpers.resizeTextareas());
+        return { type: 'merge', removedPage, scriptsMovedCount };
     };
 
     /**
@@ -118,14 +122,16 @@ window.MangaApp.createPageOps = function (deps) {
      * 指定ページ・インデックスのセリフを削除する。
      * テキストが入力されている場合は確認ダイアログを表示する（先頭20文字をプレビュー）。
      * @param {number} pIndex @param {number} idx
+     * @returns {Script | null} 削除されたセリフオブジェクト、キャンセルされた場合は null
      */
     const removeScript = (pIndex, idx) => {
         const script = pageStore.pages[pIndex].scripts[idx];
         if (script.text && script.text.trim() !== '') {
-            if (!confirm('このセリフを削除しますか？\n\n' + (script.text.substring(0, 20) + '...'))) return;
+            if (!confirm('このセリフを削除しますか？\n\n' + (script.text.substring(0, 20) + '...'))) return null;
         }
-        pageStore.pages[pIndex].scripts.splice(idx, 1);
+        const removedScript = pageStore.pages[pIndex].scripts.splice(idx, 1)[0];
         nextTick(() => helpers.resizeTextareas());
+        return removedScript;
     };
 
     /**

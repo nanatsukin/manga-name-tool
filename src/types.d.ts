@@ -433,9 +433,9 @@ interface CanvasModuleInstance {
 interface PageOpsInstance {
     changeMode(mode: string): Promise<void>;
     addPage(): Promise<void>;
-    deletePage(idx: number): void;
+    deletePage(idx: number): { type: 'delete' | 'merge', removedPage: Page, scriptsMovedCount: number } | null;
     addScript(pIdx: number): void;
-    removeScript(pIndex: number, idx: number): void;
+    removeScript(pIndex: number, idx: number): Script | null;
     toggleScriptType(pIndex: number, idx: number): void;
     addNoteToCurrentPage(): void;
     moveScript(pIndex: number, sIndex: number, dir: number): void;
@@ -492,8 +492,8 @@ interface LayoutModuleInstance {
 }
 
 interface KeyboardInstance {
-    handleScriptTextKeydown(e: KeyboardEvent, pIndex: number, sIndex: number): void;
-    splitScriptFromButton(pIndex: number, sIndex: number): void;
+    handleScriptTextKeydown(e: KeyboardEvent, pIndex: number, sIndex: number): { action: 'split', originalText: string } | null | void;
+    splitScriptFromButton(pIndex: number, sIndex: number): { originalText: string } | null;
 }
 
 interface ProjectIOInstance {

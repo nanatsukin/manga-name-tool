@@ -303,30 +303,30 @@ const app = createApp({
             uiStore.scriptInputRefs = {};
         });
 
-        // --- Snackbar (改ページ Undo) ---
-        const pageBreakSnackbar = ref({ visible: false, message: '', undoFn: null });
+        // --- Snackbar (Undo) ---
+        const actionSnackbar = ref({ visible: false, message: '', undoFn: null });
         /** @type {ReturnType<typeof setTimeout> | null} */
         let _snackbarTimer = null;
         /**
-         * 改ページ操作後にUndoスナックバーを表示する
+         * 操作後にUndoスナックバーを表示する
          * @param {string} message
          * @param {() => void} undoFn
          */
-        const showPageBreakSnackbar = (message, undoFn) => {
+        const showActionSnackbar = (message, undoFn) => {
             if (_snackbarTimer) clearTimeout(_snackbarTimer);
-            pageBreakSnackbar.value = { visible: true, message, undoFn };
+            actionSnackbar.value = { visible: true, message, undoFn };
             _snackbarTimer = setTimeout(() => {
-                pageBreakSnackbar.value = { visible: false, message: '', undoFn: null };
+                actionSnackbar.value = { visible: false, message: '', undoFn: null };
                 _snackbarTimer = null;
             }, 3500);
         };
         const dismissSnackbar = () => {
             if (_snackbarTimer) clearTimeout(_snackbarTimer);
-            pageBreakSnackbar.value = { visible: false, message: '', undoFn: null };
+            actionSnackbar.value = { visible: false, message: '', undoFn: null };
         };
-        const executePageBreakUndo = async () => {
-            if (pageBreakSnackbar.value.undoFn) {
-                await pageBreakSnackbar.value.undoFn();
+        const executeActionUndo = async () => {
+            if (actionSnackbar.value.undoFn) {
+                await actionSnackbar.value.undoFn();
             }
             dismissSnackbar();
         };
@@ -351,7 +351,7 @@ const app = createApp({
             await nextTick();
             helpers.resizeTextareas();
 
-            showPageBreakSnackbar('改ページしました', async () => {
+            showActionSnackbar('改ページしました', async () => {
                 const newPageIndex = pIndex + 1;
                 const scriptsToMove = pageStore.pages[newPageIndex].scripts;
 
@@ -384,22 +384,104 @@ const app = createApp({
          */
         const deletePage = async (pIndex) => {
             const oldLength = pageStore.pages.length;
-            pageOps.deletePage(pIndex);
-            if (pageStore.pages.length < oldLength) {
-                // ページが実際に削除された場合、同期的にSetを再構築
-                const nextSet = new Set();
-                visiblePlotPageIndices.value.forEach(i => {
-                    if (i < pIndex) nextSet.add(i);
-                    else if (i > pIndex) nextSet.add(i - 1);
+            const result = pageOps.deletePage(pIndex);
+            if (result) {
+                const { type, removedPage, scriptsMovedCount } = result;
+
+                if (pageStore.pages.length < oldLength) {
+                    // ページが実際に削除された場合、同期的にSetを再構築
+                    const nextSet = new Set();
+                    visiblePlotPageIndices.value.forEach(i => {
+                        if (i < pIndex) nextSet.add(i);
+                        else if (i > pIndex) nextSet.add(i - 1);
+                    });
+                    visiblePlotPageIndices.value = nextSet;
+
+                    // Vue3 リアクティビティ強制トリガー
+                    pageStore.pages = [...pageStore.pages];
+
+                    // 結合後のテキストエリア高さを再計算
+                    await nextTick();
+                    helpers.resizeTextareas();
+                }
+
+                const message = type === 'merge' ? 'ページを結合しました' : 'ページを削除しました';
+                showActionSnackbar(message, async () => {
+                    if (type === 'merge') {
+                        const prevPage = pageStore.pages[pIndex - 1];
+                        const movedScripts = prevPage.scripts.splice(-scriptsMovedCount);
+                        removedPage.scripts = movedScripts;
+                    }
+
+                    // Restore page
+                    pageStore.pages.splice(pIndex, 0, removedPage);
+
+                    const nextUndoSet = new Set();
+                    visiblePlotPageIndices.value.forEach(i => {
+                        if (i < pIndex) nextUndoSet.add(i);
+                        else if (i >= pIndex) nextUndoSet.add(i + 1);
+                    });
+                    nextUndoSet.add(pIndex);
+                    visiblePlotPageIndices.value = nextUndoSet;
+
+                    pageStore.pages = [...pageStore.pages];
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
                 });
-                visiblePlotPageIndices.value = nextSet;
+            }
+        };
 
-                // Vue3 リアクティビティ強制トリガー
-                pageStore.pages = [...pageStore.pages];
+        /**
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedRemoveScript = (pIndex, sIndex) => {
+            const removedScript = pageOps.removeScript(pIndex, sIndex);
+            if (removedScript) {
+                showActionSnackbar('セリフを削除しました', async () => {
+                    pageStore.pages[pIndex].scripts.splice(sIndex, 0, removedScript);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
 
-                // 結合後のテキストエリア高さを再計算
-                await nextTick();
-                helpers.resizeTextareas();
+        /**
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedSplitScriptFromButton = (pIndex, sIndex) => {
+            const result = keyboard.splitScriptFromButton(pIndex, sIndex);
+            if (result) {
+                showActionSnackbar('セリフを分割しました', async () => {
+                    const scripts = pageStore.pages[pIndex].scripts;
+                    scripts[sIndex].text = result.originalText;
+                    scripts.splice(sIndex + 1, 1);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
+
+        /**
+         * @param {KeyboardEvent} e
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedHandleScriptTextKeydown = (e, pIndex, sIndex) => {
+            const result = keyboard.handleScriptTextKeydown(e, pIndex, sIndex);
+            if (result && result.action === 'split') {
+                showActionSnackbar('セリフを分割しました', async () => {
+                    const scripts = pageStore.pages[pIndex].scripts;
+                    scripts[sIndex].text = result.originalText;
+                    scripts.splice(sIndex + 1, 1);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
             }
         };
 
@@ -498,16 +580,16 @@ const app = createApp({
             addPage: pageOps.addPage,
             deletePage,
             addScript: pageOps.addScript,
-            removeScript: pageOps.removeScript,
+            removeScript: wrappedRemoveScript,
             toggleScriptType: pageOps.toggleScriptType,
             addNoteToCurrentPage: pageOps.addNoteToCurrentPage,
             moveScript: pageOps.moveScript,
             insertScriptAfter: pageOps.insertScriptAfter,
             moveSubsequentScriptsToNewPage: pageOps.moveSubsequentScriptsToNewPage,
             splitPageWithSnackbar,
-            pageBreakSnackbar,
+            actionSnackbar,
             dismissSnackbar,
-            executePageBreakUndo,
+            executeActionUndo,
             nextPage: pageOps.nextPage,
             prevPage: pageOps.prevPage,
             selectItem: pageOps.selectItem,
@@ -566,8 +648,8 @@ const app = createApp({
             exportData: exporter.exportData,
 
             // Keyboard
-            handleScriptTextKeydown: keyboard.handleScriptTextKeydown,
-            splitScriptFromButton: keyboard.splitScriptFromButton
+            handleScriptTextKeydown: wrappedHandleScriptTextKeydown,
+            splitScriptFromButton: wrappedSplitScriptFromButton
         };
     }
 });

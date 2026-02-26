@@ -1004,14 +1004,14 @@
             </div>
         </main>
 
-        <!-- 改ページ Undo スナックバー -->
+        <!-- Undo スナックバー -->
         <transition name="snackbar">
-            <div v-if="pageBreakSnackbar.visible"
+            <div v-if="actionSnackbar.visible"
                 class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border border-blue-500/40 bg-gray-900/95 backdrop-blur-md text-sm"
                 role="status" aria-live="polite">
-                <i class="fas fa-file-export text-blue-400"></i>
-                <span class="text-gray-200">{{ pageBreakSnackbar.message }}</span>
-                <button @click="executePageBreakUndo"
+                <i class="fas fa-info-circle text-blue-400"></i>
+                <span class="text-gray-200">{{ actionSnackbar.message }}</span>
+                <button @click="executeActionUndo"
                     class="ml-2 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">
                     元に戻す
                 </button>
