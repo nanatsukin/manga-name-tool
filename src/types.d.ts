@@ -244,6 +244,7 @@ interface UiStoreInstance {
     // Menu / responsive
     isMenuOpen: boolean;
     isSmallScreen: boolean;
+    scriptMenuDirection: 'down' | 'up';
     // Save / processing
     saveStatus: SaveStatus;
     readonly saveStatusText: string;
@@ -282,6 +283,7 @@ interface UiStoreInstance {
     // Methods
     checkScreenSize(): void;
     setConfigStore(store: ConfigStoreInstance): void;
+    toggleScriptMenu(event: MouseEvent | TouchEvent, menuId: string): void;
 }
 
 interface HistoryStoreInstance {

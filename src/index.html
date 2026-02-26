@@ -595,14 +595,14 @@
                                             <!-- モバイル「…」メニュー -->
                                             <div class="relative flex">
                                                 <button
-                                                    @click.stop="openScriptMenuId = (openScriptMenuId === 'm-' + pIndex + '-' + idx ? null : 'm-' + pIndex + '-' + idx)"
+                                                    @click.stop="toggleScriptMenu($event, 'm-' + pIndex + '-' + idx)"
                                                     class="w-10 text-gray-400 hover:text-white hover:bg-gray-700 border-l border-gray-700 transition-colors flex items-center justify-center text-xs"
                                                     title="その他の操作">···</button>
                                                 <div v-if="openScriptMenuId === 'm-' + pIndex + '-' + idx"
                                                     @click.stop="openScriptMenuId = null" class="fixed inset-0 z-40">
                                                 </div>
                                                 <div v-if="openScriptMenuId === 'm-' + pIndex + '-' + idx"
-                                                    :class="idx < 3 ? 'top-full mt-1' : 'bottom-full mb-1'"
+                                                    :class="scriptMenuDirection === 'down' ? 'top-full mt-1' : 'bottom-full mb-1'"
                                                     class="absolute right-0 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 min-w-[160px] py-1">
                                                     <button
                                                         @click="splitScriptFromButton(pIndex, idx); openScriptMenuId = null"
@@ -652,8 +652,7 @@
                                         </button>
                                         <!-- 「…」メニュー -->
                                         <div class="relative flex-1 flex">
-                                            <button
-                                                @click.stop="openScriptMenuId = (openScriptMenuId === pIndex + '-' + idx ? null : pIndex + '-' + idx)"
+                                            <button @click.stop="toggleScriptMenu($event, pIndex + '-' + idx)"
                                                 class="w-full text-gray-500 hover:text-white hover:bg-gray-700 transition-colors flex items-center justify-center text-xs"
                                                 title="その他の操作">
                                                 ···
@@ -663,7 +662,7 @@
                                                 @click.stop="openScriptMenuId = null" class="fixed inset-0 z-40"></div>
                                             <!-- ドロップダウン本体 -->
                                             <div v-if="openScriptMenuId === pIndex + '-' + idx"
-                                                :class="idx < 3 ? 'top-full mt-1' : 'bottom-full mb-1'"
+                                                :class="scriptMenuDirection === 'down' ? 'top-full mt-1' : 'bottom-full mb-1'"
                                                 class="absolute right-0 bg-gray-800 border border-gray-600 rounded shadow-xl z-50 min-w-[160px] py-1">
                                                 <button @click="jumpToConte(pIndex, script); openScriptMenuId = null"
                                                     class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2 transition">

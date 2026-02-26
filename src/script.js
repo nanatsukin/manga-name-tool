@@ -453,6 +453,8 @@ const app = createApp({
             isMenuOpen: uiRefs.isMenuOpen,
             showOutputMenu: uiRefs.showOutputMenu,
             openScriptMenuId: uiRefs.openScriptMenuId,
+            scriptMenuDirection: uiRefs.scriptMenuDirection,
+            toggleScriptMenu: uiStore.toggleScriptMenu,
             fileInput: uiRefs.fileInput,
             nameModeContainer: uiRefs.nameModeContainer,
             progress: uiRefs.progress,
