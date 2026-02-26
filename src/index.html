@@ -531,8 +531,8 @@
                             </div>
                         </div>
                         <template v-if="visiblePlotPageIndices.has(pIndex)">
-                            <div class="bg-gray-800 rounded-b overflow-hidden min-h-[40px]"
-                                @dragover.prevent="dragOverPage(pIndex)" @drop.prevent="dropOnPage(pIndex)">
+                            <div class="bg-gray-800 rounded-b min-h-[40px]" @dragover.prevent="dragOverPage(pIndex)"
+                                @drop.prevent="dropOnPage(pIndex)">
                                 <div v-if="page.scripts.length === 0"
                                     class="text-center text-xs text-gray-600 py-2 border-b border-gray-700">(セリフなし)
                                 </div>
