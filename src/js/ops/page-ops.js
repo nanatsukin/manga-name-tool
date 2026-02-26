@@ -224,6 +224,20 @@ window.MangaApp.createPageOps = function (deps) {
     };
 
     /**
+     * 指定セリフ以降を新しいページに移動してページ分割する（確認ダイアログなし版）。
+     * スナックバー経由など、外部で確認済みの場合に使用する。
+     * @param {number} pIndex @param {number} sIndex @returns {Promise<void>}
+     */
+    const moveSubsequentScriptsToNewPageDirect = async (pIndex, sIndex) => {
+        // sIndex 以降のセリフを元のページから切り出す
+        const scriptsToMove = pageStore.pages[pIndex].scripts.splice(sIndex);
+        const newPage = /** @type {Page} */ ({ id: Date.now(), scripts: scriptsToMove, drawings: [] });
+        // 切り出したセリフを持つ新ページを直後に挿入する
+        pageStore.pages.splice(pIndex + 1, 0, newPage);
+        nextTick(() => helpers.resizeTextareas());
+    };
+
+    /**
      * 次のページに移動する。
      * conte モード中は先に全 Canvas を保存してから移動する。
      */
@@ -421,7 +435,7 @@ window.MangaApp.createPageOps = function (deps) {
     return {
         changeMode, addPage, deletePage,
         addScript, removeScript, toggleScriptType, addNoteToCurrentPage,
-        moveScript, insertScriptAfter, moveSubsequentScriptsToNewPage,
+        moveScript, insertScriptAfter, moveSubsequentScriptsToNewPage, moveSubsequentScriptsToNewPageDirect,
         nextPage, prevPage, selectItem, toggleImageEditMode,
         addDrawing, removeDrawing,
         jumpToPlot, jumpToConte, jumpToName,

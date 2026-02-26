@@ -303,6 +303,106 @@ const app = createApp({
             uiStore.scriptInputRefs = {};
         });
 
+        // --- Snackbar (改ページ Undo) ---
+        const pageBreakSnackbar = ref({ visible: false, message: '', undoFn: null });
+        /** @type {ReturnType<typeof setTimeout> | null} */
+        let _snackbarTimer = null;
+        /**
+         * 改ページ操作後にUndoスナックバーを表示する
+         * @param {string} message
+         * @param {() => void} undoFn
+         */
+        const showPageBreakSnackbar = (message, undoFn) => {
+            if (_snackbarTimer) clearTimeout(_snackbarTimer);
+            pageBreakSnackbar.value = { visible: true, message, undoFn };
+            _snackbarTimer = setTimeout(() => {
+                pageBreakSnackbar.value = { visible: false, message: '', undoFn: null };
+                _snackbarTimer = null;
+            }, 3500);
+        };
+        const dismissSnackbar = () => {
+            if (_snackbarTimer) clearTimeout(_snackbarTimer);
+            pageBreakSnackbar.value = { visible: false, message: '', undoFn: null };
+        };
+        const executePageBreakUndo = async () => {
+            if (pageBreakSnackbar.value.undoFn) {
+                await pageBreakSnackbar.value.undoFn();
+            }
+            dismissSnackbar();
+        };
+        /**
+         * 改ページ実行 + スナックバー表示のラッパー
+         * @param {number} pIndex
+         * @param {number} idx
+         */
+        const splitPageWithSnackbar = async (pIndex, idx) => {
+            await pageOps.moveSubsequentScriptsToNewPageDirect(pIndex, idx);
+            // 仮想スクロールのインデックスを手動更新する。
+            // ページ挿入により pIndex+1 以降の全ページのインデックスが +1 ずれるため、
+            // Set を再構築して新ページも即座に表示対象に加える。
+            await nextTick();
+            const nextSet = new Set();
+            visiblePlotPageIndices.value.forEach(i => {
+                nextSet.add(i > pIndex ? i + 1 : i);
+            });
+            nextSet.add(pIndex + 1); // 新しく挿入されたページを即表示
+            visiblePlotPageIndices.value = nextSet;
+            // DOM 確定後にテキストエリアの高さを再計算する
+            await nextTick();
+            helpers.resizeTextareas();
+
+            showPageBreakSnackbar('改ページしました', async () => {
+                const newPageIndex = pIndex + 1;
+                const scriptsToMove = pageStore.pages[newPageIndex].scripts;
+
+                // ページ削除時の仮想スクロール更新を同期的に発行する
+                const nextUndoSet = new Set();
+                visiblePlotPageIndices.value.forEach(i => {
+                    if (i < newPageIndex) nextUndoSet.add(i);
+                    else if (i > newPageIndex) nextUndoSet.add(i - 1);
+                });
+                visiblePlotPageIndices.value = nextUndoSet;
+
+                // 配列の変更
+                pageStore.pages[pIndex].scripts.push(...scriptsToMove);
+                pageStore.pages.splice(newPageIndex, 1);
+
+                // Vue3 リアクティビティ強制トリガー
+                pageStore.pages = [...pageStore.pages];
+
+                // 結合後のテキストエリア高さを再計算
+                await nextTick();
+                helpers.resizeTextareas();
+
+                dismissSnackbar();
+            });
+        };
+
+        /**
+         * ページ削除 + 仮想スクロールのインデックス手動更新のラッパー
+         * @param {number} pIndex
+         */
+        const deletePage = async (pIndex) => {
+            const oldLength = pageStore.pages.length;
+            pageOps.deletePage(pIndex);
+            if (pageStore.pages.length < oldLength) {
+                // ページが実際に削除された場合、同期的にSetを再構築
+                const nextSet = new Set();
+                visiblePlotPageIndices.value.forEach(i => {
+                    if (i < pIndex) nextSet.add(i);
+                    else if (i > pIndex) nextSet.add(i - 1);
+                });
+                visiblePlotPageIndices.value = nextSet;
+
+                // Vue3 リアクティビティ強制トリガー
+                pageStore.pages = [...pageStore.pages];
+
+                // 結合後のテキストエリア高さを再計算
+                await nextTick();
+                helpers.resizeTextareas();
+            }
+        };
+
         // --- Return ---
         // テンプレートのリアクティビティのために storeToRefs でラップして返す
         const pageRefs = storeToRefs(pageStore);
@@ -394,7 +494,7 @@ const app = createApp({
             // Page operations
             changeMode: pageOps.changeMode,
             addPage: pageOps.addPage,
-            deletePage: pageOps.deletePage,
+            deletePage,
             addScript: pageOps.addScript,
             removeScript: pageOps.removeScript,
             toggleScriptType: pageOps.toggleScriptType,
@@ -402,6 +502,10 @@ const app = createApp({
             moveScript: pageOps.moveScript,
             insertScriptAfter: pageOps.insertScriptAfter,
             moveSubsequentScriptsToNewPage: pageOps.moveSubsequentScriptsToNewPage,
+            splitPageWithSnackbar,
+            pageBreakSnackbar,
+            dismissSnackbar,
+            executePageBreakUndo,
             nextPage: pageOps.nextPage,
             prevPage: pageOps.prevPage,
             selectItem: pageOps.selectItem,

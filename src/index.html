@@ -610,7 +610,7 @@
                                                         <i class="fas fa-scissors text-yellow-400 w-4"></i> ここで分割
                                                     </button>
                                                     <button
-                                                        @click="moveSubsequentScriptsToNewPage(pIndex, idx); openScriptMenuId = null"
+                                                        @click="splitPageWithSnackbar(pIndex, idx); openScriptMenuId = null"
                                                         class="w-full text-left px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-700 flex items-center gap-2">
                                                         <i class="fas fa-file-export text-blue-400 w-4"></i> 次ページへ
                                                     </button>
@@ -643,18 +643,12 @@
                                     </div>
 
                                     <div
-                                        class="hidden md:flex w-32 flex-none items-stretch border-l border-gray-700 bg-gray-800/10">
+                                        class="hidden md:flex w-20 flex-none items-stretch border-l border-gray-700 bg-gray-800/10">
                                         <!-- 分割ボタン -->
                                         <button @click="splitScriptFromButton(pIndex, idx)"
                                             class="flex-1 text-gray-500 hover:text-yellow-400 hover:bg-yellow-900/20 transition-colors border-r border-gray-700 flex items-center justify-center"
                                             title="カーソル位置で分割">
                                             <i class="fas fa-scissors text-xs"></i>
-                                        </button>
-                                        <!-- 新ページへボタン -->
-                                        <button @click="moveSubsequentScriptsToNewPage(pIndex, idx)"
-                                            class="flex-1 text-gray-500 hover:text-blue-400 hover:bg-blue-900/20 transition-colors border-r border-gray-700 flex items-center justify-center"
-                                            title="これ以降を新ページへ">
-                                            <i class="fas fa-file-export text-xs"></i>
                                         </button>
                                         <!-- 「…」メニュー -->
                                         <div class="relative flex-1 flex">
@@ -685,6 +679,17 @@
                                                     <i class="fas fa-trash-alt w-4"></i> 削除
                                                 </button>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 改ページラインウィジェット（ホバー時のみ表示・最終行除く） -->
+                                    <div v-if="idx < page.scripts.length - 1"
+                                        class="page-break-trigger absolute bottom-0 left-0 right-0 h-3 flex items-center justify-center z-10"
+                                        @click.stop="splitPageWithSnackbar(pIndex, idx + 1)">
+                                        <div class="page-break-line">
+                                            <span class="page-break-label">
+                                                <i class="fas fa-file-export mr-1"></i>ここで改ページ
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -999,6 +1004,23 @@
                 </div>
             </div>
         </main>
+
+        <!-- 改ページ Undo スナックバー -->
+        <transition name="snackbar">
+            <div v-if="pageBreakSnackbar.visible"
+                class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border border-blue-500/40 bg-gray-900/95 backdrop-blur-md text-sm"
+                role="status" aria-live="polite">
+                <i class="fas fa-file-export text-blue-400"></i>
+                <span class="text-gray-200">{{ pageBreakSnackbar.message }}</span>
+                <button @click="executePageBreakUndo"
+                    class="ml-2 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition">
+                    元に戻す
+                </button>
+                <button @click="dismissSnackbar" class="text-gray-500 hover:text-gray-300 text-xs ml-1 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </transition>
     </div>
     <!-- Stores (Pinia) -->
     <script src="js/stores/pageStore.js"></script>

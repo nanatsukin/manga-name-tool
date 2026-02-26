@@ -262,6 +262,8 @@
             padding: 0;
             min-height: 44px;
             transition: background-color 0.15s ease;
+            position: relative;
+            /* 改ページラインウィジェットの絶対配置に必要 */
         }
 
         /* スマホ時に入力欄が横に潰れないように調整 */
@@ -795,4 +797,107 @@
         html[data-theme="light"] button.hover\:bg-gray-700:hover {
             background-color: #e4e4e7 !important;
             color: #18181b !important;
+        }
+
+        /* ========================================
+           改ページラインウィジェット
+           ======================================== */
+
+        /* トリガー領域: 行の下端 3px に重なる「薄い帯」 */
+        .page-break-trigger {
+            pointer-events: none;
+            /* デフォルトはマウスをスルー */
+            cursor: default;
+        }
+
+        /* 親 panel-row がホバーされたときだけトリガーを有効化 */
+        .panel-row:hover .page-break-trigger {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        /* 改ページライン本体（横一本線） */
+        .page-break-line {
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        /* ライン自体の装飾（グラデーション横線） */
+        .page-break-line::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    #3b82f6 20%,
+                    #60a5fa 50%,
+                    #3b82f6 80%,
+                    transparent 100%);
+            border-radius: 1px;
+        }
+
+        /* ラベル */
+        .page-break-label {
+            position: relative;
+            z-index: 2;
+            background: #1e3a5f;
+            color: #93c5fd;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 8px;
+            border-radius: 99px;
+            border: 1px solid #3b82f6;
+            white-space: nowrap;
+            letter-spacing: 0.02em;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(2px);
+            transition: opacity 0.15s ease, transform 0.15s ease;
+        }
+
+        /* トリガーホバー時にラインとラベルを表示 */
+        .page-break-trigger:hover .page-break-line {
+            opacity: 1;
+        }
+
+        .page-break-trigger:hover .page-break-label {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ライトモード対応 */
+        html[data-theme="light"] .page-break-label {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-color: #93c5fd;
+        }
+
+        /* ========================================
+           Undo スナックバー トランジション
+           ======================================== */
+        .snackbar-enter-active,
+        .snackbar-leave-active {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .snackbar-enter-from,
+        .snackbar-leave-to {
+            opacity: 0;
+            transform: translateX(-50%) translateY(12px);
+        }
+
+        .snackbar-enter-to,
+        .snackbar-leave-from {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }

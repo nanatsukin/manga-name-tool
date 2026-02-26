@@ -439,6 +439,7 @@ interface PageOpsInstance {
     moveScript(pIndex: number, sIndex: number, dir: number): void;
     insertScriptAfter(pIndex: number, sIndex: number): void;
     moveSubsequentScriptsToNewPage(pIndex: number, sIndex: number): Promise<void>;
+    moveSubsequentScriptsToNewPageDirect(pIndex: number, sIndex: number): Promise<void>;
     nextPage(): Promise<void>;
     prevPage(): Promise<void>;
     selectItem(id: number | null): void;
