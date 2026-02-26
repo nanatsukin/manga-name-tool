@@ -149,7 +149,7 @@ const app = createApp({
 
         // --- Virtual Scroll ---
         // ネームモード: ビューポート外の見開きコンテンツを非レンダリングにして DOM ノード数を削減する。
-        const visibleSpreadIndices = ref(/** @type {Set<number>} */ (new Set()));
+        const visibleSpreadIndices = ref(/** @type {Set<number>} */(new Set()));
         /** @type {IntersectionObserver | null} */
         let _spreadObserver = null;
 
@@ -160,7 +160,7 @@ const app = createApp({
             _spreadObserver = new IntersectionObserver((entries) => {
                 const next = new Set(visibleSpreadIndices.value);
                 entries.forEach(entry => {
-                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.spreadIdx);
+                    const idx = Number(/** @type {HTMLElement} */(entry.target).dataset.spreadIdx);
                     if (entry.isIntersecting) next.add(idx); else next.delete(idx);
                 });
                 visibleSpreadIndices.value = next;
@@ -168,7 +168,7 @@ const app = createApp({
         };
 
         // プロットモード: ビューポート外のページセクションを非レンダリングにしてドラッグ時の再レンダリングを削減する。
-        const visiblePlotPageIndices = ref(/** @type {Set<number>} */ (new Set()));
+        const visiblePlotPageIndices = ref(/** @type {Set<number>} */(new Set()));
         /** @type {IntersectionObserver | null} */
         let _plotObserver = null;
 
@@ -179,7 +179,7 @@ const app = createApp({
             _plotObserver = new IntersectionObserver((entries) => {
                 const next = new Set(visiblePlotPageIndices.value);
                 entries.forEach(entry => {
-                    const idx = Number(/** @type {HTMLElement} */ (entry.target).dataset.plotPageIdx);
+                    const idx = Number(/** @type {HTMLElement} */(entry.target).dataset.plotPageIdx);
                     if (entry.isIntersecting) next.add(idx); else next.delete(idx);
                 });
                 visiblePlotPageIndices.value = next;
@@ -210,6 +210,36 @@ const app = createApp({
                 }
             });
         }, { deep: false });
+
+        // 表示倍率が変わったとき、全ページのレイアウト座標を比率で変換する
+        watch(() => pageConfig.value.scale, (/** @type {number} */ newScale, /** @type {number} */ oldScale) => {
+            if (uiStore.isRestoring) return;   // IDB 復元中は変換しない
+            if (!oldScale || oldScale === newScale) return;
+            const ratio = newScale / oldScale;
+            pageStore.pages.forEach(page => {
+                page.drawings.forEach(d => {
+                    d.layout.x *= ratio;
+                    d.layout.y *= ratio;
+                    d.layout.w *= ratio;
+                    d.layout.h *= ratio;
+                    if (d.inner) {
+                        d.inner.x = (d.inner.x || 0) * ratio;
+                        d.inner.y = (d.inner.y || 0) * ratio;
+                    }
+                });
+                page.scripts.forEach(s => {
+                    s.layout.x *= ratio;
+                    s.layout.y *= ratio;
+                    s.layout.fontSize = (s.layout.fontSize || configStore.pageConfig.defaultFontSize) * ratio;
+                });
+            });
+        });
+
+        // テーマ変更時に html[data-theme] 属性を更新する（初回は即時適用）
+        document.documentElement.setAttribute('data-theme', configStore.pageConfig.theme || 'dark');
+        watch(() => configStore.pageConfig.theme, (/** @type {string|undefined} */ newTheme) => {
+            document.documentElement.setAttribute('data-theme', newTheme || 'dark');
+        });
 
         // モード切替時に Observer を再登録する。
         // 各モードパネルは v-if で制御されるため、モード変更で DOM が完全に再生成される。
@@ -273,6 +303,188 @@ const app = createApp({
             uiStore.scriptInputRefs = {};
         });
 
+        // --- Snackbar (Undo) ---
+        const actionSnackbar = ref({ visible: false, message: '', undoFn: null });
+        /** @type {ReturnType<typeof setTimeout> | null} */
+        let _snackbarTimer = null;
+        /**
+         * 操作後にUndoスナックバーを表示する
+         * @param {string} message
+         * @param {() => void} undoFn
+         */
+        const showActionSnackbar = (message, undoFn) => {
+            if (_snackbarTimer) clearTimeout(_snackbarTimer);
+            actionSnackbar.value = { visible: true, message, undoFn };
+            _snackbarTimer = setTimeout(() => {
+                actionSnackbar.value = { visible: false, message: '', undoFn: null };
+                _snackbarTimer = null;
+            }, 3500);
+        };
+        const dismissSnackbar = () => {
+            if (_snackbarTimer) clearTimeout(_snackbarTimer);
+            actionSnackbar.value = { visible: false, message: '', undoFn: null };
+        };
+        const executeActionUndo = async () => {
+            if (actionSnackbar.value.undoFn) {
+                await actionSnackbar.value.undoFn();
+            }
+            dismissSnackbar();
+        };
+        /**
+         * 改ページ実行 + スナックバー表示のラッパー
+         * @param {number} pIndex
+         * @param {number} idx
+         */
+        const splitPageWithSnackbar = async (pIndex, idx) => {
+            await pageOps.moveSubsequentScriptsToNewPageDirect(pIndex, idx);
+            // 仮想スクロールのインデックスを手動更新する。
+            // ページ挿入により pIndex+1 以降の全ページのインデックスが +1 ずれるため、
+            // Set を再構築して新ページも即座に表示対象に加える。
+            await nextTick();
+            const nextSet = new Set();
+            visiblePlotPageIndices.value.forEach(i => {
+                nextSet.add(i > pIndex ? i + 1 : i);
+            });
+            nextSet.add(pIndex + 1); // 新しく挿入されたページを即表示
+            visiblePlotPageIndices.value = nextSet;
+            // DOM 確定後にテキストエリアの高さを再計算する
+            await nextTick();
+            helpers.resizeTextareas();
+
+            showActionSnackbar('改ページしました', async () => {
+                const newPageIndex = pIndex + 1;
+                const scriptsToMove = pageStore.pages[newPageIndex].scripts;
+
+                // ページ削除時の仮想スクロール更新を同期的に発行する
+                const nextUndoSet = new Set();
+                visiblePlotPageIndices.value.forEach(i => {
+                    if (i < newPageIndex) nextUndoSet.add(i);
+                    else if (i > newPageIndex) nextUndoSet.add(i - 1);
+                });
+                visiblePlotPageIndices.value = nextUndoSet;
+
+                // 配列の変更
+                pageStore.pages[pIndex].scripts.push(...scriptsToMove);
+                pageStore.pages.splice(newPageIndex, 1);
+
+                // Vue3 リアクティビティ強制トリガー
+                pageStore.pages = [...pageStore.pages];
+
+                // 結合後のテキストエリア高さを再計算
+                await nextTick();
+                helpers.resizeTextareas();
+
+                dismissSnackbar();
+            });
+        };
+
+        /**
+         * ページ削除 + 仮想スクロールのインデックス手動更新のラッパー
+         * @param {number} pIndex
+         */
+        const deletePage = async (pIndex) => {
+            const oldLength = pageStore.pages.length;
+            const result = pageOps.deletePage(pIndex);
+            if (result) {
+                const { type, removedPage, scriptsMovedCount } = result;
+
+                if (pageStore.pages.length < oldLength) {
+                    // ページが実際に削除された場合、同期的にSetを再構築
+                    const nextSet = new Set();
+                    visiblePlotPageIndices.value.forEach(i => {
+                        if (i < pIndex) nextSet.add(i);
+                        else if (i > pIndex) nextSet.add(i - 1);
+                    });
+                    visiblePlotPageIndices.value = nextSet;
+
+                    // Vue3 リアクティビティ強制トリガー
+                    pageStore.pages = [...pageStore.pages];
+
+                    // 結合後のテキストエリア高さを再計算
+                    await nextTick();
+                    helpers.resizeTextareas();
+                }
+
+                const message = type === 'merge' ? 'ページを結合しました' : 'ページを削除しました';
+                showActionSnackbar(message, async () => {
+                    if (type === 'merge') {
+                        const prevPage = pageStore.pages[pIndex - 1];
+                        const movedScripts = prevPage.scripts.splice(-scriptsMovedCount);
+                        removedPage.scripts = movedScripts;
+                    }
+
+                    // Restore page
+                    pageStore.pages.splice(pIndex, 0, removedPage);
+
+                    const nextUndoSet = new Set();
+                    visiblePlotPageIndices.value.forEach(i => {
+                        if (i < pIndex) nextUndoSet.add(i);
+                        else if (i >= pIndex) nextUndoSet.add(i + 1);
+                    });
+                    nextUndoSet.add(pIndex);
+                    visiblePlotPageIndices.value = nextUndoSet;
+
+                    pageStore.pages = [...pageStore.pages];
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
+
+        /**
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedRemoveScript = (pIndex, sIndex) => {
+            const removedScript = pageOps.removeScript(pIndex, sIndex);
+            if (removedScript) {
+                showActionSnackbar('セリフを削除しました', async () => {
+                    pageStore.pages[pIndex].scripts.splice(sIndex, 0, removedScript);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
+
+        /**
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedSplitScriptFromButton = (pIndex, sIndex) => {
+            const result = keyboard.splitScriptFromButton(pIndex, sIndex);
+            if (result) {
+                showActionSnackbar('セリフを分割しました', async () => {
+                    const scripts = pageStore.pages[pIndex].scripts;
+                    scripts[sIndex].text = result.originalText;
+                    scripts.splice(sIndex + 1, 1);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
+
+        /**
+         * @param {KeyboardEvent} e
+         * @param {number} pIndex
+         * @param {number} sIndex
+         */
+        const wrappedHandleScriptTextKeydown = (e, pIndex, sIndex) => {
+            const result = keyboard.handleScriptTextKeydown(e, pIndex, sIndex);
+            if (result && result.action === 'split') {
+                showActionSnackbar('セリフを分割しました', async () => {
+                    const scripts = pageStore.pages[pIndex].scripts;
+                    scripts[sIndex].text = result.originalText;
+                    scripts.splice(sIndex + 1, 1);
+                    await nextTick();
+                    helpers.resizeTextareas();
+                    dismissSnackbar();
+                });
+            }
+        };
+
         // --- Return ---
         // テンプレートのリアクティビティのために storeToRefs でラップして返す
         const pageRefs = storeToRefs(pageStore);
@@ -321,6 +533,10 @@ const app = createApp({
             isTransparentMode: uiRefs.isTransparentMode,
             showExportModal: uiRefs.showExportModal,
             isMenuOpen: uiRefs.isMenuOpen,
+            showOutputMenu: uiRefs.showOutputMenu,
+            openScriptMenuId: uiRefs.openScriptMenuId,
+            scriptMenuDirection: uiRefs.scriptMenuDirection,
+            toggleScriptMenu: uiStore.toggleScriptMenu,
             fileInput: uiRefs.fileInput,
             nameModeContainer: uiRefs.nameModeContainer,
             progress: uiRefs.progress,
@@ -362,14 +578,18 @@ const app = createApp({
             // Page operations
             changeMode: pageOps.changeMode,
             addPage: pageOps.addPage,
-            deletePage: pageOps.deletePage,
+            deletePage,
             addScript: pageOps.addScript,
-            removeScript: pageOps.removeScript,
+            removeScript: wrappedRemoveScript,
             toggleScriptType: pageOps.toggleScriptType,
             addNoteToCurrentPage: pageOps.addNoteToCurrentPage,
             moveScript: pageOps.moveScript,
             insertScriptAfter: pageOps.insertScriptAfter,
             moveSubsequentScriptsToNewPage: pageOps.moveSubsequentScriptsToNewPage,
+            splitPageWithSnackbar,
+            actionSnackbar,
+            dismissSnackbar,
+            executeActionUndo,
             nextPage: pageOps.nextPage,
             prevPage: pageOps.prevPage,
             selectItem: pageOps.selectItem,
@@ -381,6 +601,7 @@ const app = createApp({
             jumpToName: pageOps.jumpToName,
             sortAllScriptsByConteOrder: pageOps.sortAllScriptsByConteOrder,
             applyFontSizeToAll: pageOps.applyFontSizeToAll,
+            setActivePage: (/** @type {number} */ idx) => { pageStore.activePageIndex = idx; },
 
             // Drag plot
             dragStart: dragPlot.dragStart,
@@ -427,8 +648,8 @@ const app = createApp({
             exportData: exporter.exportData,
 
             // Keyboard
-            handleScriptTextKeydown: keyboard.handleScriptTextKeydown,
-            splitScriptFromButton: keyboard.splitScriptFromButton
+            handleScriptTextKeydown: wrappedHandleScriptTextKeydown,
+            splitScriptFromButton: wrappedSplitScriptFromButton
         };
     }
 });

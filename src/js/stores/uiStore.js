@@ -37,9 +37,41 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
     /** ハンバーガーメニューの開閉状態。 */
     /** @type {VueRef<boolean>} */
     const isMenuOpen = ref(false);
+    /** 出力・連携ドロップダウンの開閉状態。 */
+    /** @type {VueRef<boolean>} */
+    const showOutputMenu = ref(false);
     /** ウィンドウ幅が見開き2ページ表示に足りない小画面かどうか。 */
     /** @type {VueRef<boolean>} */
     const isSmallScreen = ref(false);
+    /** プロットモードで「…」メニューが開いているセリフの一意キー（"pIndex-idx" 形式）。 */
+    /** @type {VueRef<string | null>} */
+    const openScriptMenuId = ref(null);
+    /** プロットモードの「…」メニューの表示方向（'down' | 'up'）。 */
+    /** @type {VueRef<'down'|'up'>} */
+    const scriptMenuDirection = ref('down');
+
+    /**
+     * 「…」メニューの表示状態をトグルし、表示方向を位置に基づいて判定する。
+     * @param {MouseEvent} event 
+     * @param {string} menuId 
+     */
+    const toggleScriptMenu = (event, menuId) => {
+        if (openScriptMenuId.value === menuId) {
+            openScriptMenuId.value = null;
+            return;
+        }
+
+        // 画面のY座標で判定（上半分なら下へ、下半分なら上へ開く）
+        const target = /** @type {HTMLElement} */(event.currentTarget);
+        const rect = target.getBoundingClientRect();
+        if (rect.top < window.innerHeight / 2) {
+            scriptMenuDirection.value = 'down';
+        } else {
+            scriptMenuDirection.value = 'up';
+        }
+
+        openScriptMenuId.value = menuId;
+    };
 
     // --- Save / processing ---
     /** 自動保存の現在のステータス。 */
@@ -175,7 +207,7 @@ window.MangaApp.stores.useUiStore = Pinia.defineStore('ui', () => {
         showSettings, showTextModal, showExportModal, showDrawingModal,
         currentEditingDrawing, modalCanvasRef,
         selectedItemId, copiedPageId,
-        isMenuOpen, isSmallScreen,
+        isMenuOpen, showOutputMenu, isSmallScreen, openScriptMenuId, scriptMenuDirection, toggleScriptMenu,
         saveStatus, saveStatusText, isRestoring, isProcessing, isExporting,
         progress, progressMessage,
         get autoSaveTimer() { return autoSaveTimer; },

@@ -82,6 +82,7 @@ interface PageConfig {
     scale: number;
     fontFamily: string;
     defaultFontSize: number;
+    theme?: string;
 }
 
 /** エクスポート設定 */
@@ -243,6 +244,7 @@ interface UiStoreInstance {
     // Menu / responsive
     isMenuOpen: boolean;
     isSmallScreen: boolean;
+    scriptMenuDirection: 'down' | 'up';
     // Save / processing
     saveStatus: SaveStatus;
     readonly saveStatusText: string;
@@ -281,6 +283,7 @@ interface UiStoreInstance {
     // Methods
     checkScreenSize(): void;
     setConfigStore(store: ConfigStoreInstance): void;
+    toggleScriptMenu(event: MouseEvent | TouchEvent, menuId: string): void;
 }
 
 interface HistoryStoreInstance {
@@ -430,14 +433,15 @@ interface CanvasModuleInstance {
 interface PageOpsInstance {
     changeMode(mode: string): Promise<void>;
     addPage(): Promise<void>;
-    deletePage(idx: number): void;
+    deletePage(idx: number): { type: 'delete' | 'merge', removedPage: Page, scriptsMovedCount: number } | null;
     addScript(pIdx: number): void;
-    removeScript(pIndex: number, idx: number): void;
+    removeScript(pIndex: number, idx: number): Script | null;
     toggleScriptType(pIndex: number, idx: number): void;
     addNoteToCurrentPage(): void;
     moveScript(pIndex: number, sIndex: number, dir: number): void;
     insertScriptAfter(pIndex: number, sIndex: number): void;
     moveSubsequentScriptsToNewPage(pIndex: number, sIndex: number): Promise<void>;
+    moveSubsequentScriptsToNewPageDirect(pIndex: number, sIndex: number): Promise<void>;
     nextPage(): Promise<void>;
     prevPage(): Promise<void>;
     selectItem(id: number | null): void;
@@ -488,8 +492,8 @@ interface LayoutModuleInstance {
 }
 
 interface KeyboardInstance {
-    handleScriptTextKeydown(e: KeyboardEvent, pIndex: number, sIndex: number): void;
-    splitScriptFromButton(pIndex: number, sIndex: number): void;
+    handleScriptTextKeydown(e: KeyboardEvent, pIndex: number, sIndex: number): { action: 'split', originalText: string } | null | void;
+    splitScriptFromButton(pIndex: number, sIndex: number): { originalText: string } | null;
 }
 
 interface ProjectIOInstance {
