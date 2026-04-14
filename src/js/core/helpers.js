@@ -238,7 +238,6 @@ window.MangaApp.createHelpers = function (deps) {
 
     /**
      * 全ページのプロット内容をマークダウン形式でクリップボードにコピーする。
-     * AI（Gemini 等）へそのまま貼り付けて相談できる形式で出力する。
      * キャラクター名が空または "-" のセリフはト書きとして出力する。
      * @returns {Promise<void>}
      */
@@ -263,7 +262,7 @@ window.MangaApp.createHelpers = function (deps) {
         });
         try {
             await navigator.clipboard.writeText(output);
-            alert("全ページのプロットをクリップボードにコピーしました。\nGeminiなどのAIにそのまま貼り付けて相談できます。");
+            alert("全ページのプロットをクリップボードにコピーしました。");
         } catch (e) {
             alert('コピー失敗: ' + e);
         }
